@@ -218,12 +218,18 @@ suggests, with three specific exceptions:
    would block Phase 0. Recommendation: the Phase 0 build check
    applies only to the *new* Phase 0 headers (the TDD types), and is
    extended file-by-file as those five headers are cleaned up in
-   later small commits. The check itself is a script (grep for
-   `#include <QWidget`, `#include <QtWidgets`, `#include <QMainWindow`,
-   `#include <QApplication`, `#include "qwt`, `#include <qwt`) run
-   over the new headers, wired into the build or CI as a separate
-   step — not as a change to `src.pro` yet, to keep Phase 0
-   behaviour-neutral.
+   later small commits. The check itself is implemented as
+   `util/check-core-includes.sh` (Phase 0 step 3, committed
+   separately): it greps the seven new headers for any Qt include
+   (`#include <Q...`, `#include "Qt...`) or Qwt include
+   (`#include "qwt...`, `#include <qwt...`), prints
+   `file:line:match` on failure, and exits 1. It is stricter than
+   Q1 on purpose — Q1 allows Qt Core, but these seven headers are
+   pure standard C++, so any Qt include in them is a failure until
+   the script is deliberately updated in the same commit that
+   justifies it. It is a documented manual step for now, not wired
+   into qmake or CI, to keep Phase 0 behaviour-neutral; CI wiring
+   is a separate, later decision.
 
 ## 4. Phase 0 plan (small commits, in order)
 
@@ -244,11 +250,15 @@ and the 8 baseline unit-test suites must pass after each one.
    modified in this commit except the build file list, if needed to
    compile the headers at all — prefer header-only types so no build
    change is needed.
-3. **Build check for the new headers only.** Add a script
-   (e.g. `util/check-core-includes.sh`) that fails on the forbidden
-   includes listed in §3.3, run over the new headers. Wire it as a
-   documented manual step first; CI wiring is a separate, later
-   commit if the maintainers want it.
+3. **Build check for the new headers only.** Done:
+   `util/check-core-includes.sh`, as described in §3.3. Usage:
+   `./util/check-core-includes.sh` (checks the seven headers),
+   or with explicit file arguments. Verified: passes on the
+   current headers, and fails (exit 1, with file:line) on a
+   deliberately bad copy containing `#include <QWidget>` and on
+   one containing `#include "qwt_spline_basis.h"`, and on a
+   missing file. Wire it into CI as a separate, later commit if
+   the maintainers want it.
 4. **Mapping unit tests, no production migration.** Add QtTest cases
    (under `unittests/`, following the existing suite layout) that
    construct the new types from existing data: e.g. build a
