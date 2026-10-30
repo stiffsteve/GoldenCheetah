@@ -259,15 +259,31 @@ and the 8 baseline unit-test suites must pass after each one.
    one containing `#include "qwt_spline_basis.h"`, and on a
    missing file. Wire it into CI as a separate, later commit if
    the maintainers want it.
-4. **Mapping unit tests, no production migration.** Add QtTest cases
-   (under `unittests/`, following the existing suite layout) that
-   construct the new types from existing data: e.g. build a
-   `TelemetrySample` from a `RealtimeData` fixture and assert the
-   watts / HR / cadence / speed / distance fields and the validity
-   flags; build a `Workout` from an `ErgFile` fixture and assert step
-   durations and targets; build an `AthleteProfile` from a
-   `ZoneRange` fixture and assert FTP / weight handling. These tests
-   prove the mapping tables (§2) before any call site moves.
+4. **Mapping unit tests, no production migration.** Done:
+   `unittests/Core/phase0Mapping/` (`testPhase0Mapping.cpp`,
+   `phase0Mapping.pro`, wired into `unittests/unittests.pro`),
+   14 test cases, all passing alongside the 8 baseline suites.
+   One design correction from the plan as written: the tests do
+   NOT include the real `RealtimeData`, `ErgFile`, or `Zones`
+   headers. `RealtimeData.h` includes `GoldenCheetah.h`,
+   `ErgFileBase.h`, and `<QApplication>`, and its object contains
+   `RealtimeDataSession`, which references `Context`, `Athlete`,
+   and `RideFile`; `ErgFile.h` includes `Context.h`, `Zones.h`,
+   `Settings.h`, `<QtGui>`, and `<QTextEdit>`; `Zones.h` includes
+   `GoldenCheetah.h` and `Athlete.h`. Linking any of them would
+   drag the God Context and the GUI into a core test, defeating
+   Phase 0. Instead the tests use plain fixtures mirroring only
+   the old types' field values, plus test-local mapping functions
+   implementing the §2 tables: `RealtimeData` fields → sample
+   (watts / HR / cadence / speed / distance / altitude / slope →
+   gradient / load → trainer_load_pct / msecs → monotonic_ms,
+   explicit validity flags, `watts_3s` left 0 for the session to
+   compute, dropout ≠ zero watts); `ErgFileSection` → step (ERG
+   value → target_watts, Slope value → target_gradient_pct);
+   `ZoneRange` FTP → `AthleteProfile::ftp_watts`. The test-local
+   mapping functions are prototypes: step 5 promotes them to
+   `src/Core` and switches these tests to call them, with the
+   assertions unchanged.
 5. **Field-mapping tables, as documentation, then as code.**
    Commit the §2 mapping tables (series → sample fields, trainer
    booleans → `SessionState`, `ErgFilePoint` → `WorkoutStep`) as a
@@ -285,7 +301,8 @@ and the 8 baseline unit-test suites must pass after each one.
 7. **Phase 0 exit criteria** (all must hold before Phase 1 starts):
    - New headers compile with no Widgets/Qwt includes (check in
      step 3 passes).
-   - Mapping tests pass, alongside the 8 baseline suites.
+   - Mapping tests pass, alongside the 8 baseline suites (9 suites
+     total after step 4).
    - Existing GUI builds (`qmake build.pro -r`, `sub-qwt`,
      `sub-src`) and runs `--version` as in the baseline.
    - No behaviour change: no workout, device, recording, or chart
