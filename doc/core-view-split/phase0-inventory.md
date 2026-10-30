@@ -220,11 +220,11 @@ suggests, with three specific exceptions:
    extended file-by-file as those five headers are cleaned up in
    later small commits. The check itself is implemented as
    `util/check-core-includes.sh` (Phase 0 step 3, committed
-   separately): it greps the seven new headers for any Qt include
+   separately): it greps the Phase 0 headers (seven types plus Mapping.h) for any Qt include
    (`#include <Q...`, `#include "Qt...`) or Qwt include
    (`#include "qwt...`, `#include <qwt...`), prints
    `file:line:match` on failure, and exits 1. It is stricter than
-   Q1 on purpose — Q1 allows Qt Core, but these seven headers are
+   Q1 on purpose — Q1 allows Qt Core, but these Phase 0 headers are
    pure standard C++, so any Qt include in them is a failure until
    the script is deliberately updated in the same commit that
    justifies it. It is a documented manual step for now, not wired
@@ -252,7 +252,7 @@ and the 8 baseline unit-test suites must pass after each one.
    change is needed.
 3. **Build check for the new headers only.** Done:
    `util/check-core-includes.sh`, as described in §3.3. Usage:
-   `./util/check-core-includes.sh` (checks the seven headers),
+   `./util/check-core-includes.sh` (checks the Phase 0 headers),
    or with explicit file arguments. Verified: passes on the
    current headers, and fails (exit 1, with file:line) on a
    deliberately bad copy containing `#include <QWidget>` and on
@@ -284,13 +284,32 @@ and the 8 baseline unit-test suites must pass after each one.
    mapping functions are prototypes: step 5 promotes them to
    `src/Core` and switches these tests to call them, with the
    assertions unchanged.
-5. **Field-mapping tables, as documentation, then as code.**
-   Commit the §2 mapping tables (series → sample fields, trainer
-   booleans → `SessionState`, `ErgFilePoint` → `WorkoutStep`) as a
-   short doc update first, then implement the mapping functions in
-   a new, small translation unit that both the tests and, later, the
-   GUI adapter can use. Do not yet change `RealtimeData`,
-   `ErgFile`, or `Context`.
+5. **Field-mapping tables, as documentation, then as code.** Done:
+   `src/Core/Mapping.h` (header-only, pure std C++, listed in
+   `src.pro` HEADERS and in `util/check-core-includes.sh`, which
+   now checks 8 Phase 0 files). It defines three plain source
+   structs and three mapping functions, and the step 4 tests now
+   call them with their assertions unchanged:
+   `telemetryFromSource(TelemetrySource, wallclock_ms)` →
+   `TelemetrySample` (series → sample fields, explicit validity,
+   `watts_3s` left 0 for the session); `workoutStepFromSection
+   (WorkoutSectionSource)` → `WorkoutStep` (ERG value →
+   target_watts, Slope value → target_gradient_pct);
+   `athleteProfileFromSource(AthleteSource)` → `AthleteProfile`
+   (caller picks the `ZoneRange`/sport for FTP, athlete settings
+   for weights/height). The functions deliberately do NOT take
+   `RealtimeData`/`ErgFile`/`ZoneRange` — those headers pull
+   Widgets/Context/GUI — so the caller at the boundary, where the
+   old types live, fills a source struct and calls the mapping.
+   That boundary contract is what makes this header testable
+   without linking the GUI. Two corrections are recorded in
+   `Mapping.h`: (a) `ErgFileSection`, not `ErgFilePoint`, maps to
+   `WorkoutStep` (points are within-section samples, Phase 1
+   parser work); (b) `SessionState` is NOT mapped here, because
+   trainer booleans alone underdetermine it (Running vs Paused
+   needs lifecycle context) — that mapping belongs in the step 6
+   adapter and stays a deferred sub-decision. Do not yet change
+   `RealtimeData`, `ErgFile`, or `Context`.
 6. **One call-site adapter, as the Phase 0 exit proof.**
    Pick the smallest observable seam — recommended: the
    `Context::telemetryUpdate` path — and add a thin adapter that

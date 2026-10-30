@@ -5,7 +5,7 @@
 # Fails if a Phase 0 pure-type header includes anything from Qt or Qwt.
 #
 # Scope (deliberately narrow, see doc/core-view-split/phase0-inventory.md):
-#   Only the seven Phase 0 headers are checked. A check over all of
+#   Only the Phase 0 headers are checked (seven types plus Mapping.h).
 #   src/Core/ would fail on day one for pre-existing leakage
 #   (GcCalendarModel, IntervalItem, NamedSearch, TimeUtils, and
 #   SplineLookup via qwt_spline_*), and would block Phase 0. The check
@@ -13,14 +13,14 @@
 #
 # Strictness (deliberately stricter than the TDD's Q1 decision):
 #   Q1 allows Qt Core in core and forbids Qt Widgets and Qwt. These
-#   seven headers are pure standard C++ (only <cstdint>, <string>,
+#   Phase 0 headers are pure standard C++ (only <cstdint>, <string>,
 #   <vector>, <chrono>), so this script forbids *any* Qt or Qwt include
 #   in them. If a future Phase 0 header legitimately needs Qt Core,
 #   update this script's pattern list in the same commit, with a
 #   comment explaining why — do not silently weaken it.
 #
 # Usage:
-#   util/check-core-includes.sh            # check the seven Phase 0 headers
+#   util/check-core-includes.sh            # check the Phase 0 headers
 #   util/check-core-includes.sh FILE...    # check the given files instead
 #   util/check-core-includes.sh --help
 #
@@ -55,6 +55,7 @@ else
         "$REPO_ROOT/src/Core/TrainerCommand.h"
         "$REPO_ROOT/src/Core/AthleteProfile.h"
         "$REPO_ROOT/src/Core/Clock.h"
+        "$REPO_ROOT/src/Core/Mapping.h"
     )
 fi
 

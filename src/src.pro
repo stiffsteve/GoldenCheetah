@@ -604,7 +604,8 @@ HEADERS += Core/Athlete.h Core/Context.h Core/DataFilter.h Core/FreeSearch.h Cor
 # Phase 0 core/view split pure types (header-only, no production use yet).
 # Kept pure standard C++: no Qt, Widgets, Qwt, or GUI includes.
 HEADERS += Core/TelemetrySample.h Core/DeviceInfo.h Core/SessionState.h \
-           Core/Workout.h Core/TrainerCommand.h Core/AthleteProfile.h Core/Clock.h
+           Core/Workout.h Core/TrainerCommand.h Core/AthleteProfile.h Core/Clock.h \
+           Core/Mapping.h
 
 # device and file IO or edit
 HEADERS += FileIO/ArchiveFile.h FileIO/AthleteBackup.h  FileIO/Bin2RideFile.h FileIO/BinRideFile.h \

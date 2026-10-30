@@ -17,17 +17,16 @@
 //     and <QTextEdit>.
 //   - Zones.h includes GoldenCheetah.h and Athlete.h.
 // Including any of them in a core test would defeat the purpose of
-// Phase 0. So these tests use plain fixtures that mirror only the
-// field values of the old types, and test-local mapping functions
-// that implement the mapping tables.
+// Phase 0. So these tests use the plain source structs from
+// src/Core/Mapping.h, which mirror only the field values of the
+// old types, and call the production mapping functions there.
 //
-// The test-local mapping functions below are TEST-ONLY PROTOTYPES.
-// Phase 0 step 5 promotes them to src/Core, once the old types can be
-// included without pulling Widgets/Context — or, equivalently, once
-// the mapping is done at a boundary where the old types are already
-// available. When that promotion happens, these tests should be
-// switched to call the production mapping functions, with the
-// assertions unchanged. That switch is the step 5 exit proof.
+// Phase 0 step 5 promoted those prototypes to production code in
+// src/Core/Mapping.h, and these tests now call that code directly.
+// The assertions are unchanged from step 4; only the call sites
+// moved. See Mapping.h for the boundary pattern: the mapping takes
+// plain source structs, and the caller at the boundary (where the
+// old types live) fills them from the old objects.
 //
 // The new types themselves are pure standard C++ (see src/Core/),
 // so this test only needs QtTest for the test harness itself.
@@ -39,93 +38,9 @@
 #include "Core/TrainerCommand.h"
 #include "Core/AthleteProfile.h"
 #include "Core/Clock.h"
+#include "Core/Mapping.h"
 
 #include <QTest>
-
-// ---------------------------------------------------------------- fixtures
-// Mirrors only the field values used by the mapping tables. Field
-// names and units follow the old types; see the inventory for the
-// full old-type shapes.
-
-struct RealtimeFixture {
-    double watts = 0;
-    double heartrate = 0;
-    double cadence = 0;
-    double speed_kph = 0;
-    double distance_m = 0;
-    double altitude_m = 0;
-    double slope_pct = 0;      // RealtimeData slope
-    double load_pct = 0;       // RealtimeData load
-    double target_watts = 0;
-    int64_t msecs = 0;         // RealtimeData time, in milliseconds
-    bool has_power = false;    // source present, not "watts != 0"
-    bool has_hr = false;
-    bool trainer_connected = false;
-};
-
-struct ErgSectionFixture {
-    int duration_ms = 0;       // ErgFileSection duration
-    double start_value = 0;    // watts in ERG mode, gradient in Slope mode
-    bool is_slope = false;
-    std::string label;
-};
-
-struct ZoneRangeFixture {
-    int ftp = 0;               // Zones::ZoneRange ftp
-    double weight_kg = 75;     // stored athlete weight (not in ZoneRange)
-    double bike_weight_kg = 8;
-    double height_cm = 175;
-};
-
-// ------------------------------------------------------- test-only mapping
-// Prototype of the Phase 0 mapping tables. See the header comment:
-// promote these to src/Core in step 5, and switch these tests to
-// call them, keeping the assertions unchanged.
-
-static TelemetrySample toTelemetrySample(const RealtimeFixture &rt,
-                                         int64_t wallclock_ms) {
-    TelemetrySample sample;
-    sample.monotonic_ms = rt.msecs;
-    sample.wallclock_ms = wallclock_ms;
-    sample.watts = rt.watts;
-    // Devices never set watts_3s; the session computes it (TDD 7.1).
-    sample.watts_3s = 0;
-    sample.heartrate = rt.heartrate;
-    sample.cadence = rt.cadence;
-    sample.speed_kph = rt.speed_kph;
-    sample.distance_m = rt.distance_m;
-    sample.altitude_m = rt.altitude_m;
-    sample.gradient_pct = rt.slope_pct;
-    sample.target_watts = rt.target_watts;
-    // Validity is explicit and independent of the value: a dropout
-    // is invalid data, not zero watts (TDD 7.1).
-    sample.power_valid = rt.has_power;
-    sample.hr_valid = rt.has_hr;
-    sample.trainer_connected = rt.trainer_connected;
-    sample.trainer_load_pct = static_cast<int>(rt.load_pct);
-    return sample;
-}
-
-static WorkoutStep toWorkoutStep(const ErgSectionFixture &section) {
-    WorkoutStep step;
-    step.duration_secs = section.duration_ms / 1000.0;
-    if (section.is_slope) {
-        step.target_gradient_pct = section.start_value;
-    } else {
-        step.target_watts = section.start_value;
-    }
-    step.label = section.label;
-    return step;
-}
-
-static AthleteProfile toAthleteProfile(const ZoneRangeFixture &range) {
-    AthleteProfile profile;
-    profile.ftp_watts = range.ftp;
-    profile.weight_kg = range.weight_kg;
-    profile.bike_weight_kg = range.bike_weight_kg;
-    profile.height_cm = range.height_cm;
-    return profile;
-}
 
 // ------------------------------------------------------------------- tests
 
@@ -146,22 +61,22 @@ private slots:
     }
 
     void telemetrySampleMapping() {
-        RealtimeFixture rt;
-        rt.watts = 250;
-        rt.heartrate = 140;
-        rt.cadence = 88;
-        rt.speed_kph = 36.5;
-        rt.distance_m = 12345;
-        rt.altitude_m = 210;
-        rt.slope_pct = 4.5;
-        rt.load_pct = 62;
-        rt.target_watts = 260;
-        rt.msecs = 123456;
-        rt.has_power = true;
-        rt.has_hr = true;
-        rt.trainer_connected = true;
+        TelemetrySource source;
+        source.watts = 250;
+        source.heartrate = 140;
+        source.cadence = 88;
+        source.speed_kph = 36.5;
+        source.distance_m = 12345;
+        source.altitude_m = 210;
+        source.gradient_pct = 4.5;
+        source.trainer_load_pct = 62;
+        source.target_watts = 260;
+        source.monotonic_ms = 123456;
+        source.power_valid = true;
+        source.hr_valid = true;
+        source.trainer_connected = true;
 
-        TelemetrySample sample = toTelemetrySample(rt, 1700000000000LL);
+        TelemetrySample sample = telemetryFromSource(source, 1700000000000LL);
         QCOMPARE(sample.monotonic_ms, int64_t(123456));
         QCOMPARE(sample.wallclock_ms, int64_t(1700000000000LL));
         QCOMPARE(sample.watts, 250.0);
@@ -184,20 +99,20 @@ private slots:
         // The key TDD rule: a dropout is invalid data, not zero watts.
         // A sample with watts == 0 and power_valid == false must not
         // be read as "the rider produced 0 W".
-        RealtimeFixture rt;
-        rt.watts = 0;
-        rt.heartrate = 0;
-        rt.has_power = false;
-        rt.has_hr = false;
+        TelemetrySource source;
+        source.watts = 0;
+        source.heartrate = 0;
+        source.power_valid = false;
+        source.hr_valid = false;
 
-        TelemetrySample sample = toTelemetrySample(rt, 0);
+        TelemetrySample sample = telemetryFromSource(source, 0);
         QCOMPARE(sample.watts, 0.0);
         QCOMPARE(sample.power_valid, false);
         QCOMPARE(sample.hr_valid, false);
         // Conversely, a present source with a genuine 0 W reading is
         // valid data, and must be distinguishable from a dropout.
-        rt.has_power = true;
-        sample = toTelemetrySample(rt, 0);
+        source.power_valid = true;
+        sample = telemetryFromSource(source, 0);
         QCOMPARE(sample.power_valid, true);
     }
 
@@ -241,13 +156,13 @@ private slots:
     }
 
     void workoutStepMappingErg() {
-        ErgSectionFixture section;
+        WorkoutSectionSource section;
         section.duration_ms = 600000;
         section.start_value = 250;
         section.is_slope = false;
         section.label = "interval";
 
-        WorkoutStep step = toWorkoutStep(section);
+        WorkoutStep step = workoutStepFromSection(section);
         QCOMPARE(step.duration_secs, 600.0);
         QCOMPARE(step.target_watts, 250.0);
         QCOMPARE(step.target_gradient_pct, 0.0);
@@ -255,12 +170,12 @@ private slots:
     }
 
     void workoutStepMappingSlope() {
-        ErgSectionFixture section;
+        WorkoutSectionSource section;
         section.duration_ms = 300000;
         section.start_value = 6.5;
         section.is_slope = true;
 
-        WorkoutStep step = toWorkoutStep(section);
+        WorkoutStep step = workoutStepFromSection(section);
         QCOMPARE(step.duration_secs, 300.0);
         QCOMPARE(step.target_watts, 0.0);
         QCOMPARE(step.target_gradient_pct, 6.5);
@@ -332,13 +247,13 @@ private slots:
         // FTP is per ZoneRange in v3.8, not a single number. The GUI
         // layer must pick the range (and sport) explicitly; this test
         // pins the mapping once that choice is made.
-        ZoneRangeFixture range;
-        range.ftp = 280;
+        AthleteSource range;
+        range.ftp_watts = 280;
         range.weight_kg = 75;
         range.bike_weight_kg = 8;
         range.height_cm = 175;
 
-        AthleteProfile profile = toAthleteProfile(range);
+        AthleteProfile profile = athleteProfileFromSource(range);
         QCOMPARE(profile.ftp_watts, 280.0);
         QCOMPARE(profile.weight_kg, 75.0);
     }
