@@ -59,6 +59,7 @@ else
         "$REPO_ROOT/src/Core/WorkoutPlayer.h"
         "$REPO_ROOT/src/Core/WorkoutParser.h"
         "$REPO_ROOT/src/Core/TelemetryBus.h"
+        "$REPO_ROOT/src/Core/TelemetryMerge.h"
     )
 fi
 
