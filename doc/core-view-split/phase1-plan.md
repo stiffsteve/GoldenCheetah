@@ -92,10 +92,12 @@ that difference is documented in the adapter header.
    ERG/MRC (hasWatts) files produce steps; CRS/slope files return
    an empty workout (not time-based), documented. This adapter is
    NOT checked by `util/check-core-includes.sh` (boundary code).
-   It is compile-verified by the GUI build; it cannot be unit-
-   tested without linking `ErgFile` (which drags in Context/GUI,
-   see Phase 0 step 4), so its field mapping is reviewed, not
-   test-covered, and that limitation is stated in the header.
+   It cannot be unit-tested without linking `ErgFile` (which
+   drags in Context/GUI, see Phase 0 step 4), and it is not
+   compiled into the GUI binary yet (no production file includes
+   it; qmake HEADERS lists do not compile headers), so it is
+   verified in Phase 1 by a standalone syntax check only, with
+   that limitation stated in the header.
 
 4. **Unit tests** (`unittests/Core/workoutPlayer/`, new QtTest
    suite): player tests with `FakeClock` (no `sleep()` anywhere)

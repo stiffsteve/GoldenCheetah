@@ -665,7 +665,7 @@ HEADERS += ../contrib/qtsolutions/codeeditor/codeeditor.h ../contrib/qtsolutions
 HEADERS += Train/AddDeviceWizard.h Train/CalibrationData.h Train/ComputrainerController.h Train/Computrainer.h Train/DeviceConfiguration.h \
            Train/DeviceTypes.h Train/DialWindow.h Train/TrainerDayDownloadDialog.h Train/TrainerDay.h Train/ErgFile.h Train/ErgFilePlot.h \
            Train/Library.h Train/LibraryParser.h Train/MeterWidget.h Train/NullController.h Train/RealtimeController.h \
-           Train/RealtimeData.h Train/TelemetryAdapter.h Train/RealtimePlot.h Train/RealtimePlotWindow.h Train/RemoteControl.h Train/SpinScanPlot.h \
+           Train/RealtimeData.h Train/TelemetryAdapter.h Train/WorkoutAdapter.h Train/RealtimePlot.h Train/RealtimePlotWindow.h Train/RemoteControl.h Train/SpinScanPlot.h \
            Train/SpinScanPlotWindow.h Train/SpinScanPolarPlot.h Train/GarminServiceHelper.h Train/PhysicsUtility.h Train/BicycleSim.h \
            Train/PolynomialRegression.h Train/MultiRegressionizer.h Train/StravaRoutesDownload.h \
            Train/HtmlTrainingBridge.h \
