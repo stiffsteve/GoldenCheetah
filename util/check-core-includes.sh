@@ -56,6 +56,7 @@ else
         "$REPO_ROOT/src/Core/AthleteProfile.h"
         "$REPO_ROOT/src/Core/Clock.h"
         "$REPO_ROOT/src/Core/Mapping.h"
+        "$REPO_ROOT/src/Core/WorkoutPlayer.h"
     )
 fi
 
