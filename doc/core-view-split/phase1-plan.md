@@ -1,8 +1,35 @@
 # Phase 1 plan: Workout parsing plus WorkoutPlayer
 
-Status: in progress, 2026-10-31. TDD section 14, Phase 1, and section
+Status: COMPLETE, 2026-10-31. TDD section 14, Phase 1, and section
 7.6 (WorkoutPlayer). Phase 0 is complete on branch
 `core-view-split-phase0` (see `phase0-inventory.md`).
+
+## Exit check, verified 2026-10-31
+
+- GUI build: qmake exit 0, `make sub-src` exit 0, binary
+  27,463,144 bytes (11:34), `--version` matches Phase 0 exit
+  (V3.8 5015, Qt 6.8.3, QWT 6.8.0, GCC 13.3.0, DB schema 160,
+  382 metrics). No GUI file changed, so no GUI behaviour change.
+- `util/check-core-includes.sh`: PASS on 10 files (Phase 0 eight
+  plus WorkoutPlayer.h and WorkoutParser.h; WorkoutAdapter.h is
+  boundary code and is not in its list, by design).
+- Tests: new workoutPlayer suite 17 passed (15 tests plus
+  init/cleanup), Phase 0 mapping suite 14 tests (16 Totals with
+  init/cleanup), all 8 baseline suites with baseline totals —
+  10 suites total, all passing.
+- VM refresh note: /usr dev packages were gone again before the
+  test build, and a system apt update was stuck holding the apt
+  lock; only that read-only update was stopped, then the saved
+  baseline script reinstalled the packages (with the IPv6 proxy
+  fallback added after Phase 0).
+
+Commits on `core-view-split-phase0`, after Phase 0's c4b0df4c0:
+07cf06156 (WorkoutPlayer), 46c9eee77 (parser), ba898d7c4
+(adapter), and the step 4 test commit below. No production call
+site uses the player or parser yet; TrainSession, FakeDevice,
+Recorder, live metrics, CRS/ZWO parsing, and the GUI switch
+remain future work, as listed under "What Phase 1 deliberately
+does not do".
 
 ## What Phase 1 is, in this codebase
 

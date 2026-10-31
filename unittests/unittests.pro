@@ -13,6 +13,7 @@ equals(GC_UNITTESTS, active) {
 			   Core/signalSafety \
 			   Core/splineCrash \
 			   Core/phase0Mapping \
+			   Core/workoutPlayer \
 			   Gui/calendarData
 	CONFIG += ordered
 } else {
