@@ -14,6 +14,7 @@ equals(GC_UNITTESTS, active) {
 			   Core/splineCrash \
 			   Core/phase0Mapping \
 			   Core/workoutPlayer \
+			   Core/telemetryBus \
 			   Gui/calendarData
 	CONFIG += ordered
 } else {

@@ -1,11 +1,35 @@
 # Phase 2 plan: RealtimeData to TelemetrySample plus TelemetryBus
 
-Status: in progress, 2026-10-31. TDD section 14, Phase 2, and
+Status: COMPLETE, 2026-10-31. TDD section 14, Phase 2, and
 section 7.7 (observer fan-out, in the TrainSession description).
 Phase 1 is complete on branch `core-view-split-phase0` (see
 `phase1-plan.md`); Phase 0's adapter already stores a
 `TelemetrySample` at the `Context` boundary, which is what this
 phase fans out.
+
+## Exit check, verified 2026-10-31
+
+- GUI build: qmake exit 0, `make sub-src` exit 0 (~27 min,
+  Context.h recompiled its dependents), binary 27,463,544 bytes
+  (13:37), `--version` matches Phase 1 exit (V3.8 5015, Qt 6.8.3,
+  QWT 6.8.0, GCC 13.3.0, DB schema 160, 382 metrics). No plot,
+  widget, or window file changed, so no GUI behaviour change;
+  the only GUI-adjacent change is `Context` publishing to an
+  empty bus.
+- `util/check-core-includes.sh`: PASS on 12 files (Phase 1 ten
+  plus TelemetryBus.h and TelemetryMerge.h).
+- Tests: new telemetryBus suite 17 passed (15 tests plus
+  init/cleanup), all earlier suites with baseline totals — 11
+  suites total, all passing.
+- No GUI consumer switched to the bus in Phase 2, per decision
+  1. That pilot switch remains a separate gated decision.
+
+Commits on `core-view-split-phase0`, after Phase 1's 9110a242b:
+514c3188b (TelemetryBus), c9b586375 (merge/dropout), and the
+step 3 (Context dual-run) and step 4 (tests) commits below.
+No production call site publishes merged samples or subscribes
+to the bus yet; merging is a pure function awaiting a Phase 4
+TrainSession caller, and device work remains Phase 3.
 
 ## What Phase 2 is, in this codebase
 
