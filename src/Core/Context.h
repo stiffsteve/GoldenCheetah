@@ -22,6 +22,7 @@
 #include "TimeUtils.h" // for class DateRange
 #include "RealtimeData.h" // for class RealtimeData
 #include "TelemetryAdapter.h" // Phase 0: RealtimeData -> TelemetrySample adapter
+#include "TelemetryBus.h" // Phase 2: observer fan-out for TelemetrySample
 #include <QDateTime> // for QDateTime::currentMSecsSinceEpoch in notifyTelemetryUpdate
 #include "CompareInterval.h" // what intervals are being compared?
 #include "CompareDateRange.h" // what intervals are being compared?
@@ -173,6 +174,16 @@ class Context : public QObject
         // code reads it yet; see notifyTelemetryUpdate.
         TelemetrySample lastTelemetrySample;
 
+        // Phase 2: the same sample, fanned out on the core
+        // TelemetryBus. Dual-running: the existing Qt signal
+        // below is still emitted unchanged, and the bus is
+        // published in addition. In production the bus has zero
+        // subscribers in Phase 2 (no plot/widget/window has been
+        // switched to it; that pilot switch is a separate gated
+        // decision), so publish() is a no-op loop plus a stored
+        // latest sample. See doc/core-view-split/phase2-plan.md.
+        TelemetryBus telemetryBus_;
+
         // comparing things
         bool isCompareIntervals;
         QList<CompareInterval> compareIntervals;
@@ -231,12 +242,22 @@ class Context : public QObject
         // proof that the mapping runs at the real boundary, and the
         // seam Phase 1 consumers will read from. The conversion is
         // cheap (a few doubles) and emits no signal of its own.
+        // Phase 2: also publish that sample on the core TelemetryBus,
+        // before emitting the existing Qt signal. Order matters for
+        // future bus consumers (they see the sample before Qt slots
+        // run), but nothing in production subscribes yet, so this
+        // changes no rendering in Phase 2.
         void notifyTelemetryUpdate(const RealtimeData &rtData) {
             lastTelemetrySample = telemetrySampleFromRealtimeData(
                 rtData, QDateTime::currentMSecsSinceEpoch());
+            telemetryBus_.publish(lastTelemetrySample);
             telemetryUpdate(rtData);
         }
         TelemetrySample telemetrySample() const { return lastTelemetrySample; }
+        // Phase 2: the core bus for this athlete's telemetry.
+        // Lifetime: tied to this Context; observers must
+        // unsubscribe before destruction (see TelemetryBus.h).
+        TelemetryBus *telemetryBus() { return &telemetryBus_; }
         void notifyErgFileSelected(ErgFile *x) { workout=x; ergFileSelected(x); ergFileSelected((ErgFileBase*)(x));}
         void notifyVideoSyncFileSelected(VideoSyncFile *x) { videosync=x; videoSyncFileSelected(x); }
         ErgFile *currentErgFile() { return workout; }
