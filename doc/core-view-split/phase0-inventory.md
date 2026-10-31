@@ -307,39 +307,89 @@ and the 8 baseline unit-test suites must pass after each one.
    `WorkoutStep` (points are within-section samples, Phase 1
    parser work); (b) `SessionState` is NOT mapped here, because
    trainer booleans alone underdetermine it (Running vs Paused
-   needs lifecycle context) — that mapping belongs in the step 6
-   adapter and stays a deferred sub-decision. Do not yet change
-   `RealtimeData`, `ErgFile`, or `Context`.
-6. **One call-site adapter, as the Phase 0 exit proof.**
-   Pick the smallest observable seam — recommended: the
-   `Context::telemetryUpdate` path — and add a thin adapter that
-   converts `RealtimeData` to `TelemetrySample` at the boundary,
-   without changing what the GUI renders. If that adapter cannot be
-   added without changing behaviour, Phase 0 is not done; do not
-   proceed to Phase 1.
-7. **Phase 0 exit criteria** (all must hold before Phase 1 starts):
-   - New headers compile with no Widgets/Qwt includes (check in
-     step 3 passes).
+   needs lifecycle context) — the step 6 adapter confirmed that a
+   single sample carries no lifecycle context either, so the
+   mapping is deferred to the Phase 1 `TrainSession` (see the
+   exit criteria below). Do not yet change `RealtimeData` or
+   `ErgFile`; `Context` is touched only by the step 6 adapter.
+6. **One call-site adapter, as the Phase 0 exit proof.** Done:
+   `src/Train/TelemetryAdapter.h` (header-only, in Train not Core,
+   because it must include `RealtimeData.h`) plus a minimal
+   `Context` integration: `Context::notifyTelemetryUpdate` now
+   also stores `lastTelemetrySample =
+   telemetrySampleFromRealtimeData(rtData, wallclock_ms)` before
+   emitting the existing `telemetryUpdate` signal, and exposes it
+   via `Context::telemetrySample()`. No existing code reads that
+   accessor yet, no signal changed, no GUI code changed, so
+   rendering is unchanged; the stored sample is the seam Phase 1
+   consumers will read from. One correction to the plan as written:
+   `telemetryUpdate` is a Qt signal on `Context`, not a function
+   body, so the seam is `notifyTelemetryUpdate`, the slot that
+   emits it. The adapter is deliberately NOT checked by
+   `util/check-core-includes.sh` (boundary code, allowed to touch
+   old types). Provisional defaults, documented in the adapter
+   header: `power_valid`/`hr_valid` true (v3.8 semantics — v3.8
+   has no validity flags, so this is NOT dropout detection, and
+   must not be used to filter data until Phase 1/4 adds validity
+   at the device boundary); `target_watts` 0 (the target lives in
+   `ErgFile`, not `RealtimeData`, and the Phase 1 session must
+   fill it); `trainer_connected` proxied by
+   `getTrainerStatusAvailable()`. The adapter's field mapping is
+   compile-verified by the GUI build and logic-verified by the
+   step 4/5 mapping tests (same `telemetryFromSource` function);
+   a live-trainer proof requires a trainer session, which is
+   Phase 1 work, not a Phase 0 unit test (linking `RealtimeData`
+   into a test drags in Context/GUI, see step 4).
+7. **Phase 0 exit criteria** (all must hold before Phase 1 starts)
+   — all checked at the end of step 6, 2026-10-30:
+   - New headers compile with no Widgets/Qwt includes: step 3
+     check passes on 8 Phase 0 files in `src/Core`.
    - Mapping tests pass, alongside the 8 baseline suites (9 suites
-     total after step 4).
-   - Existing GUI builds (`qmake build.pro -r`, `sub-qwt`,
-     `sub-src`) and runs `--version` as in the baseline.
+     total).
+   - Existing GUI builds (`qmake build.pro -r`, `sub-src`) and
+     runs `--version` as in the baseline (V3.8, Qt 6.8.3, 382
+     metrics, DB schema 160).
    - No behaviour change: no workout, device, recording, or chart
-     logic has been altered; only new types, tests, and one adapter
-     exist.
-   - Open sub-decisions from §2 are recorded as decided or
-     explicitly deferred: stable device id derivation, `SessionState`
-     mapping, which `ZoneRange`/sport builds `AthleteProfile`, and
-     which of the ~70 `RealtimeData` series are out of scope for the
-     Phase 0 sample.
+     logic altered; only new types, mapping code, tests, a build
+     check, and one adapter that stores a sample no code reads yet.
+     `RealtimeData`, `ErgFile`, and `Context`'s signal/rendering
+     behaviour are unchanged apart from that stored copy.
+   - Open sub-decisions from §2, recorded as decided or deferred:
+     * Stable device id derivation: DEFERRED to Phase 2 device
+       work. `DeviceInfo.id` is a stable string by contract, but
+       how it is derived from `DeviceConfiguration`
+       (type + portSpec or other) is not implemented in Phase 0;
+       inventing it now would fix a DeviceManager decision early.
+     * `SessionState` mapping: DEFERRED to Phase 1 `TrainSession`,
+       which owns lifecycle. Trainer booleans alone underdetermine
+       Running vs Paused (see `Mapping.h` and the adapter header).
+     * Which `ZoneRange`/sport builds `AthleteProfile`: DECIDED —
+       the caller chooses explicitly and passes FTP in
+       `AthleteSource`; there is no default range/sport guess in
+       core. The Phase 1 `WorkoutPlayer::load()` must take that
+       choice as an argument.
+     * Which of the ~70 `RealtimeData` series are out of scope:
+       DECIDED — in scope are the 14 `TelemetrySample` fields;
+       out of scope are all derived/advanced series (altWatts,
+       altDistance, virtualSpeed, wheelRpm, wbal, joules, xPower,
+       bikeScore, RI, skibaVI, isoPower, bikeStress, IF, VI, lap
+       fields, LRBalance, LTE/RTE, LPS/RPS, pedal metrics,
+       smo2/thb, VO2 and related, position, temp/coreTemp/
+       skinTemp/heatStrain/heatLoad, latitude/longitude, spinScan,
+       and all averages), listed in `TelemetryAdapter.h`. They
+       belong to Phase 4 live metrics or existing derived-data
+       code, not to the Phase 0 sample.
 
 ## 5. What Phase 0 deliberately does not do
 
 - No `WorkoutPlayer`, no `TrainSession`, no `IDevice`, no
   `FakeDevice`, no `Recorder` — those are Phases 1–4.
-- No move of `ErgFile` parsing, `RealtimeData`, or `Context`.
-- No change to `src.pro`, the qmake build, or the TDD's Appendix A
-  directory layout (deferred to the Q2 build-system decision).
+- No move of `ErgFile` parsing or `RealtimeData`. `Context` is
+  touched only by the step 6 adapter (one stored sample, one
+  accessor, no signal/rendering change).
+- No change to the qmake build system or the TDD's Appendix A
+  directory layout (deferred to the Q2 build-system decision);
+  `src.pro` HEADERS lists only gain the new Phase 0 headers.
 - No change to athlete directories, workout library formats, or
   file formats.
 - No removal of the current Qt Widgets GUI, and no QML, web, or

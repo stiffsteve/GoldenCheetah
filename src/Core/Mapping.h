@@ -61,9 +61,12 @@
 //    requirement means Error, PausedWithError, or Ready depends on
 //    whether a session was running when it appeared. Inventing a
 //    pure function of booleans would silently fix that decision.
-//    The SessionState mapping belongs in the step 6 adapter, where
-//    lifecycle context exists, and is recorded there as a deferred
-//    sub-decision. The booleans in question are RealtimeData's
+//    The step 6 adapter examined this and reached the same
+//    conclusion: a single telemetry sample carries no lifecycle
+//    context either (start/pause/stop are separate signals). So
+//    the SessionState mapping is deferred to the Phase 1
+//    TrainSession, which owns lifecycle. The booleans in question
+//    are RealtimeData's
 //    TrainerReady / Running / CalibRequired / ConfigRequired /
 //    BrakeFault, plus RealtimeController start/restart/pause/stop
 //    int return codes.

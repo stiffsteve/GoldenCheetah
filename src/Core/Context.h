@@ -21,6 +21,8 @@
 
 #include "TimeUtils.h" // for class DateRange
 #include "RealtimeData.h" // for class RealtimeData
+#include "TelemetryAdapter.h" // Phase 0: RealtimeData -> TelemetrySample adapter
+#include <QDateTime> // for QDateTime::currentMSecsSinceEpoch in notifyTelemetryUpdate
 #include "CompareInterval.h" // what intervals are being compared?
 #include "CompareDateRange.h" // what intervals are being compared?
 #include "RideFile.h"
@@ -166,6 +168,11 @@ class Context : public QObject
         bool isRunning;
         bool isPaused;
 
+        // Phase 0: last telemetry sample converted by
+        // notifyTelemetryUpdate, via TelemetryAdapter.h. No GUI
+        // code reads it yet; see notifyTelemetryUpdate.
+        TelemetrySample lastTelemetrySample;
+
         // comparing things
         bool isCompareIntervals;
         QList<CompareInterval> compareIntervals;
@@ -218,7 +225,18 @@ class Context : public QObject
         void setIndex(int i) { viewIndex = i; emit viewChanged(i); }
 
         // realtime signals
-        void notifyTelemetryUpdate(const RealtimeData &rtData) { telemetryUpdate(rtData); }
+        // Phase 0 step 6: also convert to the Phase 0 TelemetrySample
+        // and store it, without changing what the GUI renders. No
+        // existing code reads telemetrySample() yet; it is the exit
+        // proof that the mapping runs at the real boundary, and the
+        // seam Phase 1 consumers will read from. The conversion is
+        // cheap (a few doubles) and emits no signal of its own.
+        void notifyTelemetryUpdate(const RealtimeData &rtData) {
+            lastTelemetrySample = telemetrySampleFromRealtimeData(
+                rtData, QDateTime::currentMSecsSinceEpoch());
+            telemetryUpdate(rtData);
+        }
+        TelemetrySample telemetrySample() const { return lastTelemetrySample; }
         void notifyErgFileSelected(ErgFile *x) { workout=x; ergFileSelected(x); ergFileSelected((ErgFileBase*)(x));}
         void notifyVideoSyncFileSelected(VideoSyncFile *x) { videosync=x; videoSyncFileSelected(x); }
         ErgFile *currentErgFile() { return workout; }
