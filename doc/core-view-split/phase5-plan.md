@@ -1,8 +1,41 @@
 # Phase 5 plan: Thin TrainView
 
-Status: in progress, 2026-11-01. TDD section 14, Phase 5,
-and section 14.2 (second client proof). Phase 4 is complete
-on branch `core-view-split-phase0` (see `phase4-plan.md`).
+Status: COMPLETE, 2026-11-01, as scoped below. TDD section
+14, Phase 5, and section 14.2 (second client proof). Phase
+4 is complete on branch `core-view-split-phase0` (see
+`phase4-plan.md`).
+
+## Exit check, verified 2026-11-01
+
+- GUI build: qmake exit 0, `make sub-src` exit 0, binary
+  27,495,832 bytes (Nov 1 14:45, up about 32 KB from the
+  adapter object) and `--version` matches Phase 4 exit
+  (V3.8 5015, Qt 6.8.3, QWT 6.8.0, GCC 13.3.0, DB schema
+  160, 382 metrics).
+- `util/check-core-includes.sh`: PASS on 18 files (the
+  adapter is GUI-layer, not core, so it is not added to
+  that list, deliberately).
+- Tests: new trainSessionAdapter suite 7 passed (5 tests
+  plus init/cleanup), all earlier suites with baseline
+  totals — 14 suites total, all passing. The qmake test
+  build first failed to link the adapter suite (moc for
+  TrainSessionAdapter.h was not generated in the test
+  build); fixed by listing the adapter header in the test
+  .pro HEADERS, with the reason recorded there.
+- Dashboard proof verified separately: built manually with
+  g++, ran 65 s, printing step 0 then step 1, manual sent
+  then cleared, and final live metrics consistent with the
+  manual period.
+- No TrainSidebar, TrainBottom, plot, or controller file
+  changed, so no GUI behaviour change.
+
+Commits on `core-view-split-phase0`, after Phase 4's
+e8d4a9aaa: 39bde7525 (adapter), fa463d721 (dashboard),
+plus the test commit below. No production GUI code uses
+the adapter yet; the TrainSidebar switch, the QML/Godot
+second-client form, and FIT ordering remain gated
+decisions for the user, as listed under "What Phase 5
+deliberately does not do".
 
 ## What Phase 5 is, in this codebase — and what it is not
 
