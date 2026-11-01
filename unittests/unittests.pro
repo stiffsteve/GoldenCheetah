@@ -16,6 +16,7 @@ equals(GC_UNITTESTS, active) {
 			   Core/workoutPlayer \
 			   Core/telemetryBus \
 			   Core/fakeDevice \
+			   Core/trainSession \
 			   Gui/calendarData
 	CONFIG += ordered
 } else {

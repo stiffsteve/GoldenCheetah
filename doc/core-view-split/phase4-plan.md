@@ -1,12 +1,48 @@
 # Phase 4 plan: TrainSession plus Recorder
 
-Status: in progress, 2026-11-01. TDD section 14, Phase 4,
+Status: COMPLETE, 2026-11-01. TDD section 14, Phase 4,
 and sections 7.7 (TrainSession), 7.8 (Recorder), 8
 (threading, in part), and 15.2 (integration tests). Phase 3
 is complete on branch `core-view-split-phase0` (see
 `phase3-plan.md`); the player (Phase 1), bus and merge
 (Phase 2), and device interfaces, fake, and manager (Phase 3)
 are what this phase orchestrates.
+
+## Exit check, verified 2026-11-01
+
+- GUI build: qmake exit 0, `make sub-src` exit 0, binary
+  unchanged (27,463,544 bytes, Oct 31 13:37) — no production
+  file includes the new headers, so no recompilation was
+  needed — and `--version` matches Phase 3 exit (V3.8 5015,
+  Qt 6.8.3, QWT 6.8.0, GCC 13.3.0, DB schema 160, 382 metrics).
+- `util/check-core-includes.sh`: PASS on 18 files (Phase 3
+  fifteen plus LiveMetrics.h, Recorder.h, TrainSession.h;
+  the headless harness is a standalone program, not a
+  header, so it is not in the check list).
+- Tests: new trainSession suite 16 passed (14 tests plus
+  init/cleanup), all earlier suites with baseline totals —
+  13 suites total, all passing.
+- Headless harness verified separately: built manually with
+  g++ (not qmake), ran a real ERG file
+  (`test/workouts/1x10x30s@128%.erg`, FTP 250, 120 s) with
+  no window, no event loop, and no Qwt, recording 120
+  samples at 1 Hz to CSV, with per-step averages near
+  targets (78 W step averaged 75.9 W, 104 W step averaged
+  103.3 W). The first recorded sample is invalid (the
+  trainer had not been commanded yet on the first tick, so
+  no device sample existed to merge); that is correct
+  pipeline behaviour, not a bug.
+- No GUI, driver, or controller file changed, so no GUI
+  behaviour change.
+
+Commits on `core-view-split-phase0`, after Phase 3's
+19d0f7005: a299fad7b (LiveMetrics, Recorder), 6276eb40d
+(TrainSession), plus the headless harness and test commits
+below. No production call site uses TrainSession yet; the
+GUI TrainSidebar is still the only session in the product.
+FIT conversion, the GUI TrainView switch, the second
+client, and daemon mode remain future work, as listed
+under "What Phase 4 deliberately does not do".
 
 ## What Phase 4 is, in this codebase
 
