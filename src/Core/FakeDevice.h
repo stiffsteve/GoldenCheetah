@@ -80,11 +80,12 @@
 //    replaced by the converged ERG watts. This is the behaviour
 //    a session test needs: the workout asks for 250 W, the fake
 //    trainer reports watts converging to 250 W, not the script.
-//  - Generated samples: only when there is no script left
-//    (no script at all, or script exhausted) AND a trainer
-//    command is active. While a script is pending, only script
-//    samples are emitted, even on ticks where no script sample
-//    is due. A generated sample has
+//  - Generated samples: only when the script was already
+//    exhausted before the tick (no script at all, or script
+//    finished on an earlier tick) AND a trainer command is
+//    active. While a script is pending, or on the tick where
+//    its last sample is emitted, only script samples are
+//    emitted. A generated sample has
 //    monotonic_ms = wallclock_ms = now_ms (a fake has no real
 //    wall clock; that equality is documented, not hidden),
 //    trainer_connected = true, power_valid = hr_valid = true,
@@ -259,6 +260,12 @@ public:
         }
 
         bool emitted_script = false;
+        // Whether the script was already exhausted before this
+        // tick: generation must not also fire on the tick where
+        // the last script sample is emitted, or that tick would
+        // produce both a script sample and a generated one.
+        bool script_exhausted_before =
+            script_index_ >= config_.script.size();
         while (script_index_ < config_.script.size()) {
             const TelemetrySample &sample = config_.script[script_index_];
             if (sample.monotonic_ms + config_.lag_ms > now_ms) {
@@ -283,18 +290,14 @@ public:
             current_watts_ = emitted.watts;
         }
 
-        // Generated sample only if there is no script left to
-        // emit (no script at all, or script exhausted) and a
-        // trainer command is active. While a script is still
-        // pending, only script samples are emitted — otherwise
-        // every tick with no due script sample would flood an
-        // extra generated sample alongside the script timeline.
-        // (emitted_script is kept for readability; the script-
-        // exhausted check is what actually gates generation.)
+        // Generated sample only if the script was already
+        // exhausted before this tick (no script at all, or
+        // script finished on an earlier tick) and a trainer
+        // command is active. While a script is pending, or on
+        // the tick where its last sample is emitted, only script
+        // samples are emitted.
         (void)emitted_script;
-        bool script_exhausted =
-            script_index_ >= config_.script.size();
-        if (script_exhausted &&
+        if (script_exhausted_before &&
             (erg_active_ || slope_active_ || sim_active_)) {
             if (!inDropout(now_ms)) {
                 TelemetrySample generated;
