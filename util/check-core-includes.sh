@@ -62,6 +62,7 @@ else
         "$REPO_ROOT/src/Core/TelemetryMerge.h"
         "$REPO_ROOT/src/Core/IDevice.h"
         "$REPO_ROOT/src/Core/FakeDevice.h"
+        "$REPO_ROOT/src/Core/DeviceManager.h"
     )
 fi
 
