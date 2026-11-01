@@ -63,6 +63,8 @@ else
         "$REPO_ROOT/src/Core/IDevice.h"
         "$REPO_ROOT/src/Core/FakeDevice.h"
         "$REPO_ROOT/src/Core/DeviceManager.h"
+        "$REPO_ROOT/src/Core/LiveMetrics.h"
+        "$REPO_ROOT/src/Core/Recorder.h"
     )
 fi
 
