@@ -1,10 +1,44 @@
 # Phase 3 plan: IDevice plus DeviceManager plus FakeDevice
 
-Status: in progress, 2026-11-01. TDD section 14, Phase 3, and
+Status: COMPLETE, 2026-11-01. TDD section 14, Phase 3, and
 section 7.5 (IDevice and ITrainer). Phase 2 is complete on
 branch `core-view-split-phase0` (see `phase2-plan.md`); the
 Phase 2 bus and merge function are what device samples will
 flow into in Phase 4.
+
+## Exit check, verified 2026-11-01
+
+- GUI build: qmake exit 0, `make sub-src` exit 0, binary
+  unchanged (27,463,544 bytes, Oct 31 13:37) — no production
+  file includes the new headers, so no recompilation was
+  needed — and `--version` matches Phase 2 exit (V3.8 5015,
+  Qt 6.8.3, QWT 6.8.0, GCC 13.3.0, DB schema 160, 382 metrics).
+- `util/check-core-includes.sh`: PASS on 15 files (Phase 2
+  twelve plus IDevice.h, FakeDevice.h, DeviceManager.h).
+- Tests: new fakeDevice suite 18 passed (16 tests plus
+  init/cleanup), all earlier suites with baseline totals — 12
+  suites total, all passing.
+- No GUI, driver, or controller file changed, so no GUI
+  behaviour change.
+- VM refresh note: /usr dev packages were gone again, the
+  system apt update was stuck holding the lock (only that
+  read-only update was stopped, as in Phase 1), then the
+  saved script's apt update failed in a new way (apt returns
+  0 even when Ubuntu indexes fail, so the IPv6 retry never
+  triggered, and then both proxies failed), so the dev
+  packages were installed directly from /var/cache/apt/
+  archives with dpkg -i, which survives VM refreshes and
+  needs no network. The baseline script was fixed
+  (syntax-checked, not run) to detect failed Ubuntu index
+  fetches and to fall back to the apt-cache dpkg install.
+
+Commits on `core-view-split-phase0`, after Phase 2's 79a19e2b5:
+317d6750a (IDevice), 18dd4137e (FakeDevice), 7644ca88e
+(DeviceManager), plus the FakeDevice generation fix and the
+step 4 test commit below. No production call site uses
+IDevice, FakeDevice, or DeviceManager yet; driver conversion
+and the headless-FIT proof remain future work, as listed
+under "What Phase 3 deliberately does not do".
 
 ## What Phase 3 is, in this codebase
 
