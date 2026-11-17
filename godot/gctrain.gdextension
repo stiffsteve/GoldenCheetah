@@ -1,0 +1,14 @@
+; Godot second client, step 2: GDExtension manifest.
+; The plugin is built with SCons (see SConstruct) and loads
+; only on Linux x86_64, which is the platform this work
+; targets. No other platform library is shipped.
+
+[configuration]
+
+entry_symbol = "gctrain_library_init"
+compatibility_minimum = "4.5"
+
+[libraries]
+
+linux.debug.x86_64 = "bin/libgctrain.linux.template_debug.x86_64.so"
+linux.release.x86_64 = "bin/libgctrain.linux.template_debug.x86_64.so"

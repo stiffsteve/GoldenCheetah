@@ -1,0 +1,23 @@
+# Godot second client, step 2: build the GDExtension plugin.
+#
+#   cd godot && scons
+#
+# Builds bin/libgctrain.linux.template_debug.x86_64.so from
+# src/*.cpp, with the GoldenCheetah core headers on the include
+# path (../src). The plugin links the core in-process; it does
+# not link Qt. godot-cpp lives in godot/godot-cpp (branch
+# godot-4.5-stable, matching Godot 4.5.1) and is git-ignored:
+# it is a build dependency, not part of this repo.
+
+import os
+
+env = SConscript("godot-cpp/SConstruct")
+
+env.Append(CPPPATH=["../src", "src"])
+env.Append(CXXFLAGS=["-std=c++17"])
+
+sources = Glob("src/*.cpp")
+library = env.SharedLibrary(
+    "bin/libgctrain.linux.template_debug.x86_64.so", source=sources
+)
+Default(library)

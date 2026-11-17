@@ -86,3 +86,10 @@ _pch/
 *_yacc.h
 qrc_*.cpp
 
+
+# Godot second client (build dependencies / generated, not source)
+godot/godot-cpp/
+godot/.godot/
+godot/.sconsign.dblite
+*.os
+godot/*.uid
