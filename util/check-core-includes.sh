@@ -66,6 +66,7 @@ else
         "$REPO_ROOT/src/Core/LiveMetrics.h"
         "$REPO_ROOT/src/Core/Recorder.h"
         "$REPO_ROOT/src/Core/TrainSession.h"
+        "$REPO_ROOT/src/Core/GcSessionC.h"
     )
 fi
 
