@@ -1,9 +1,61 @@
 # Godot second-client plan
 
-Status: IN PROGRESS, 2026-11-17. Branch `core-view-split-phase0`,
+Status: COMPLETE, 2026-11-17. Branch `core-view-split-phase0`,
 after Phase 5 (`93da91cac`). TDD section 14.2 (second client
 proof), section 12 (game engine integration), section 13
 (licensing), Q3 (C ABI wrapper, accepted 2026-10-30).
+
+## Exit check, verified 2026-11-17
+
+- C ABI harness (`src/Core/gc-session-c-test.c`, plain C):
+  PASS, final NP=218.8 Wbal=20000 TSS=1.37, watts55=250.0 —
+  identical to the Phase 5 console dashboard run.
+- Godot headless run (`godot --headless --path godot`, 2.3 s
+  real time for 65 simulated seconds): exit 0, step 0 then
+  step 1, manual ERG 100 W sent at 30 s and cleared at 40 s,
+  final NP=218.6 Wbal=20000 TSS=1.37, "godot-client: PASS".
+  NP differs from the dashboard by 0.2 (one-frame lag: the
+  parent scene reads the session before the child ticks it
+  that frame); W'bal and TSS match exactly.
+- Versions: Godot 4.5.1-stable (editor binary, ~/godot/),
+  godot-cpp 4.5-stable (e83fd09), SCons 4.11.1. Godot 4.7.2
+  was the latest release, but godot-cpp had no 4.7 tag, so
+  4.5.1 was chosen as the latest version with a matching
+  godot-cpp. Install: Godot binary + godot-cpp clone +
+  `pip install --user --break-system-packages scons` (plain
+  pip install fails on Ubuntu 24.04, PEP 668).
+- Build fixes, recorded so they are not re-discovered:
+  `register_types.h` must include `<godot_cpp/godot.hpp>`,
+  not `<godot_cpp/core/defs.hpp>` — `ModuleInitializationLevel`
+  lives in godot.hpp. `main.gd` must not annotate the session
+  variable with the `GcTrainSession` type, and must type
+  `elapsed` explicitly (`var elapsed: float = ...`); with the
+  extension unloaded the type does not exist and the script
+  fails to parse. The project must be imported once
+  (`godot --headless --editor --quit --path .`) before a
+  plain run, or the extension is not in `.godot/
+  extension_list.cfg` and the class is a placeholder. (The
+  first import crashed with signal 11 while main.gd still
+  had the parse error; after fixing the script it exits 0.)
+- `util/check-core-includes.sh`: PASS on 19 files (new
+  GcSessionC.h added).
+- All suites pass: 13 test dirs, 0 failed (fakeDevice 18,
+  phase0Mapping 16, season 32, seasonOffset 8, seasonParser
+  3, signalSafety 4+3+3, splineCrash 3, telemetryBus 17,
+  trainSession 16, units 8, utils 3, workoutPlayer 17,
+  trainSessionAdapter 7). Note: a VM refresh during this
+  work wiped /usr dev deps (libEGL.so.1 missing, so the
+  test binaries would not load) and the apt cache was
+  empty (system replay autoclean); the baseline script's
+  dpkg-cache fallback then killed the script under
+  `set -e` before the apt install could run. Fixed in the
+  script (fallback is now `|| true`) and deps restored via
+  `--deps-only`, exit 0.
+- No TrainSidebar, TrainBottom, plot, or controller file
+  changed, so no GUI behaviour change. No GUI build was
+  re-run: no `src/` GUI file changed and GcSessionC.h is
+  not referenced by the qmake build; the Godot work lives
+  in `godot/` and `src/Core/` only.
 
 Decision recorded 2026-11-17: the user chose the Godot plugin
 over the QML dashboard as the second-client form. Phase 5
