@@ -26,6 +26,11 @@ own build entry points are `build.pro` and
   and runs the one-time editor import. Only needed for the
   Godot second client (see `doc/core-view-split/
   godot-second-client-plan.md`).
+- `godot-test.sh` — runs the headless automated test for
+  the GDExtension node (`godot/test_gctrain_session.gd`,
+  23 checks, no window/GPU/framework). Requires the plugin
+  built and the project imported once (`godot-setup.sh`
+  does both). Exit 0 and "gctrain-test: PASS" on success.
 
 ## What survives a VM refresh, and what does not
 

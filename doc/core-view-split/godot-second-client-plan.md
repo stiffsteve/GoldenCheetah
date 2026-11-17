@@ -37,6 +37,23 @@ proof), section 12 (game engine integration), section 13
   extension_list.cfg` and the class is a placeholder. (The
   first import crashed with signal 11 while main.gd still
   had the parse error; after fixing the script it exits 0.)
+- Godot layer test (`godot/test_gctrain_session.gd`, added
+  2026-11-17, run with `./scripts/godot-test.sh`): PASS, 23
+  checks, exit 0, twice in a row. A SceneTree script, no
+  window/GPU/framework: one 250 ms fixed step per frame
+  through the GDExtension node, asserting what the HUD and
+  a game read — state/step at start, target and validity
+  flags after the first device tick, manual 100 W target at
+  35 s and 250 W after clearing at 45 s, watts > 200 W at
+  55 s, step 1 / 150 W at 60 s with the step_changed signal,
+  pause freezing time-in-step with resume back to Running,
+  NP 200–235 / W'bal 19000–20000 / TSS 1.0–1.7 at 65 s, and
+  Finished after stop. Bounds mirror the C harness. Two
+  timing facts the test records: telemetry fields only exist
+  after the first tick (target after tick 1, validity flags
+  after the device has ticked once), and the node's cached
+  state is only refreshed by its next `_process`, so the
+  Finished check waits one frame after stop.
 - `util/check-core-includes.sh`: PASS on 19 files (new
   GcSessionC.h added).
 - All suites pass: 13 test dirs, 0 failed (fakeDevice 18,
