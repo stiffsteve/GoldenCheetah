@@ -58,6 +58,7 @@
 #ifndef _GC_Bt40DeviceAdapter_h
 #define _GC_Bt40DeviceAdapter_h 1
 
+#include "Core/ICalibration.h"
 #include "Core/IDevice.h"
 
 #include <cstdint>
@@ -107,7 +108,7 @@ public:
     virtual uint16_t calibrationSlope() = 0;
 };
 
-class Bt40DeviceAdapter : public ITrainer {
+class Bt40DeviceAdapter : public ITrainer, public ICalibration {
 public:
     // info: the core DeviceInfo (id "ble:<address>"). backend:
     // the BT40 backend, owned by the adapter (must be non-null).
@@ -135,17 +136,15 @@ public:
     // last emitted sample.
     void tick(int64_t now_monotonic_ms);
 
-    // Calibration, forwarded to the backend. These are wired to
-    // the core ICalibration interface in the next step; they
-    // exist here already so the backend contract is complete.
-    uint8_t calibrationType();
-    uint8_t calibrationState();
-    double calibrationTargetSpeed();
-    uint16_t calibrationSpindownTime();
-    uint16_t calibrationZeroOffset();
-    uint16_t calibrationSlope();
-    void requestCalibration();
-    void resetCalibrationState();
+    // ICalibration, forwarded to the backend (see ICalibration.h).
+    uint8_t calibrationType() const override;
+    uint8_t calibrationState() const override;
+    double calibrationTargetSpeed() const override;
+    uint16_t calibrationSpindownTime() const override;
+    uint16_t calibrationZeroOffset() const override;
+    uint16_t calibrationSlope() const override;
+    void requestCalibration() override;
+    void resetCalibrationState() override;
 
 private:
     DeviceInfo info_;

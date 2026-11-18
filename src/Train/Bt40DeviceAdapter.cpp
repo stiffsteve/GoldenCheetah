@@ -156,32 +156,32 @@ void Bt40DeviceAdapter::tick(int64_t now_monotonic_ms)
     sink_->onSample(info_.id, sample);
 }
 
-uint8_t Bt40DeviceAdapter::calibrationType()
+uint8_t Bt40DeviceAdapter::calibrationType() const
 {
     return backend_->calibrationType();
 }
 
-uint8_t Bt40DeviceAdapter::calibrationState()
+uint8_t Bt40DeviceAdapter::calibrationState() const
 {
     return backend_->calibrationState();
 }
 
-double Bt40DeviceAdapter::calibrationTargetSpeed()
+double Bt40DeviceAdapter::calibrationTargetSpeed() const
 {
     return backend_->calibrationTargetSpeed();
 }
 
-uint16_t Bt40DeviceAdapter::calibrationSpindownTime()
+uint16_t Bt40DeviceAdapter::calibrationSpindownTime() const
 {
     return backend_->calibrationSpindownTime();
 }
 
-uint16_t Bt40DeviceAdapter::calibrationZeroOffset()
+uint16_t Bt40DeviceAdapter::calibrationZeroOffset() const
 {
     return backend_->calibrationZeroOffset();
 }
 
-uint16_t Bt40DeviceAdapter::calibrationSlope()
+uint16_t Bt40DeviceAdapter::calibrationSlope() const
 {
     return backend_->calibrationSlope();
 }

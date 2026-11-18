@@ -71,6 +71,8 @@ else
         "$REPO_ROOT/src/Core/VirtualRider.h"
         "$REPO_ROOT/src/Core/BicycleSim.h"
         "$REPO_ROOT/src/Core/Integrator.h"
+        "$REPO_ROOT/src/Core/CalibrationData.h"
+        "$REPO_ROOT/src/Core/ICalibration.h"
     )
 fi
 

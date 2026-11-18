@@ -19,7 +19,6 @@
 
 #include <float.h>
 #include "CalibrationData.h"
-#include <QtDebug>
 
 CalibrationData::CalibrationData()
 {
@@ -45,7 +44,6 @@ uint8_t CalibrationData::getType()
 void CalibrationData::setType(uint8_t channel, uint8_t type)
 {
     if (this->type[channel] != type) {
-        qDebug() << "Calibration type changing to" << type << "for channel" << channel;
         this->type[channel] = type;
         setActiveChannel();
     }
@@ -59,7 +57,6 @@ uint8_t CalibrationData::getState()
 void CalibrationData::setState(uint8_t state)
 {
     if (this->state != state) {
-        qDebug() << "Calibration state changing to" << state;
         this->state = state;
 
         if (state == CALIBRATION_STATE_IDLE)
@@ -75,7 +72,6 @@ uint16_t CalibrationData::getSpindownTime()
 void CalibrationData::setSpindownTime(uint16_t time)
 {
     if (this->spindowntime != time) {
-        qDebug() << "Calibration spindown time changing to" << time;
         this->spindowntime = time;
     }
 }
@@ -88,7 +84,6 @@ uint16_t CalibrationData::getZeroOffset()
 void CalibrationData::setZeroOffset(uint16_t offset)
 {
     if (this->zerooffset != offset) {
-        qDebug() << "Calibration zero offset changing to" << offset;
         this->zerooffset = offset;
     }
 }
@@ -101,7 +96,6 @@ uint16_t CalibrationData::getSlope()
 void CalibrationData::setSlope(uint16_t slope)
 {
     if (this->slope != slope) {
-        qDebug() << "Calibration slope changing to" << slope;
         this->slope = slope;
     }
 }
@@ -114,7 +108,6 @@ double CalibrationData::getTargetSpeed()
 void CalibrationData::setTargetSpeed(double speed)
 {
     if (this->targetspeed != speed) {
-        qDebug() << "Calibration target speed changing to" << speed;
         this->targetspeed = speed;
     }
 }
@@ -122,12 +115,6 @@ void CalibrationData::setTargetSpeed(double speed)
 void CalibrationData::setRequested(uint8_t channel, bool required)
 {
     if (this->requested[channel] != required) {
-
-        if (required)
-            qDebug() << "Calibration requested for channel" << channel;
-        else
-            qDebug() << "Calibration request cleared for channel" << channel;
-
         this->requested[channel] = required;
         setActiveChannel();
     }
@@ -136,7 +123,6 @@ void CalibrationData::setRequested(uint8_t channel, bool required)
 void CalibrationData::setTimestamp(uint8_t channel, double time)
 {
     if (this->timestamp[channel] != time) {
-        qDebug() << "Last calibration timestamp updated for channel" << channel;
         this->timestamp[channel] = time;
     }
 }
@@ -181,7 +167,6 @@ void CalibrationData::setActiveChannel()
     case 1:             // select first/only device with calibration support
         for (int i = 0; i < CALIBRATION_MAX_CHANNELS; i++) {
             if (type[i] != CALIBRATION_TYPE_NOT_SUPPORTED) {
-                qDebug() << "Setting active channel for calibration to" << i << "(single)";
                 this->activechannel = i;
                 break;
             }
@@ -192,7 +177,6 @@ void CalibrationData::setActiveChannel()
         // if a device has requested calibration - use it
         for (int i = 0; i < CALIBRATION_MAX_CHANNELS; i++) {
             if ((this->requested[i] == true) && (type[i] != CALIBRATION_TYPE_NOT_SUPPORTED)) {
-                qDebug() << "Setting active channel for calibration to" << i << "(multiple/requested)";
                 this->activechannel = i;
                 return;
             }
@@ -203,7 +187,7 @@ void CalibrationData::setActiveChannel()
         uint8_t chan = 0;
         for (int i = 0; i < CALIBRATION_MAX_CHANNELS; i++) {
             if (type[i] != CALIBRATION_TYPE_NOT_SUPPORTED) {
-                //qDebug() << "Channel" << i << "is candidate for calibration with timestamp" << timestamp[i];
+                // Channel i is candidate for calibration with timestamp timestamp[i];
                 // calibration supported for this channel, check the timestamp
                 if (timestamp[i] < time) {
                     time = timestamp[i];
@@ -211,7 +195,6 @@ void CalibrationData::setActiveChannel()
                 }
             }
         }
-        qDebug() << "Setting active channel for calibration to" << chan << "(multiple/timestamp)";
         this->activechannel = chan;
         break;
     }
