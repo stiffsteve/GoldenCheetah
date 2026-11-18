@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3 uid="uid://gctrainexample"]
+
+[ext_resource type="Script" path="res://example.gd" id="1"]
+
+[node name="Example" type="Node"]
+script = ExtResource("1")
+
+[node name="GcTrainSession" type="GcTrainSession" parent="."]
+auto_load_workout = false
+ftp_watts = 300.0
+weight_kg = 80.0

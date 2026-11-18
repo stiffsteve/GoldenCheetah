@@ -1,13 +1,21 @@
 #!/usr/bin/env bash
 #
-# Godot second client — headless automated test for GcTrainSession.
+# Godot second client — headless automated tests for the plugin.
 #
-# Runs godot/test_gctrain_session.gd (extends SceneTree, no
-# window/GPU/framework): the Phase 5 dashboard workout through
-# the GDExtension node, asserting getters, step/state signals,
-# manual commands, pause/resume, and live metrics against the
-# same bounds as the C harness (src/Core/gc-session-c-test.c).
-# Exit 0 and "gctrain-test: PASS" on success, 1 on any failure.
+# Runs, in order:
+#   1. godot/test_gctrain_session.gd (extends SceneTree, no
+#      window/GPU/framework): the Phase 5 dashboard workout
+#      through the GDExtension node with the proof defaults,
+#      asserting getters, step/state signals, manual commands,
+#      pause/resume, and live metrics against the same bounds
+#      as the C harness (src/Core/gc-session-c-test.c). Exit 0
+#      and "gctrain-test: PASS" on success.
+#   2. godot/example.tscn: the example scene, which drives the
+#      session the way a real app would (node configured in
+#      the scene file, workout loaded from disk, explicit
+#      start) and checks its own result. Exit 0 and
+#      "example-client: PASS" on success.
+# Either step failing fails the script.
 #
 # Requires the plugin built and the project imported once
 # (scripts/godot-setup.sh does both). The Godot binary is
@@ -34,3 +42,5 @@ fi
 
 "$GODOT_BIN" --headless --path "$REPO/godot" \
     -s "$REPO/godot/test_gctrain_session.gd"
+
+"$GODOT_BIN" --headless --path "$REPO/godot" res://example.tscn

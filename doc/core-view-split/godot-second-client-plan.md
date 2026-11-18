@@ -54,6 +54,30 @@ proof), section 12 (game engine integration), section 13
   after the device has ticked once), and the node's cached
   state is only refreshed by its next `_process`, so the
   Finished check waits one frame after stop.
+- Example scene (`godot/example.tscn` + `example.gd` +
+  `workouts/demo.erg`, added 2026-11-18, also run by
+  `./scripts/godot-test.sh`): PASS, exit 0. Shows the flow
+  a real app uses instead of the proof defaults: the node is
+  configured in the scene file (auto_load_workout off,
+  ftp_watts 300, weight_kg 80), the script loads the workout
+  from disk with FileAccess and starts explicitly, then runs
+  the same 65 s proof and checks its own result. Final
+  NP=218.6 Wbal=20000 TSS=0.95 — TSS differs from the main
+  run (1.37) because FTP is 300 here, which is the proof the
+  scene's ftp_watts reached the session. The test above is
+  deliberately untouched by this work: it keeps the proof
+  defaults and pins the auto-load behaviour.
+- Node API added for the example (plugin change only, no
+  core change — the C ABI already had `gc_session_create`
+  taking FTP/weight and `gc_session_load_workout_text`):
+  `ftp_watts` / `weight_kg` / `auto_load_workout`
+  properties (defaults 250 / 75 / true, read by `_ready`),
+  plus bound `load_workout_text(text, source_path)` and
+  `start_session()` returning the C ABI status. Load fails
+  with GC_ERR_STATE unless the session is Idle, which is why
+  auto_load_workout must be off to load from a scene. One
+  build fix recorded: godot-cpp's `String::utf8()` returns
+  a `CharString`, not a `PackedByteArray`.
 - `util/check-core-includes.sh`: PASS on 19 files (new
   GcSessionC.h added).
 - All suites pass: 13 test dirs, 0 failed (fakeDevice 18,

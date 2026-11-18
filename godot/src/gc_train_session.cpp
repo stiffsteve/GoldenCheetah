@@ -72,6 +72,29 @@ void GcTrainSession::_bind_methods() {
                          &GcTrainSession::set_fixed_step_ms);
     ClassDB::bind_method(D_METHOD("get_fixed_step_ms"),
                          &GcTrainSession::get_fixed_step_ms);
+    ClassDB::bind_method(D_METHOD("set_ftp_watts"),
+                         &GcTrainSession::set_ftp_watts);
+    ClassDB::bind_method(D_METHOD("get_ftp_watts"),
+                         &GcTrainSession::get_ftp_watts);
+    ClassDB::bind_method(D_METHOD("set_weight_kg"),
+                         &GcTrainSession::set_weight_kg);
+    ClassDB::bind_method(D_METHOD("get_weight_kg"),
+                         &GcTrainSession::get_weight_kg);
+    ClassDB::bind_method(D_METHOD("set_auto_load_workout"),
+                         &GcTrainSession::set_auto_load_workout);
+    ClassDB::bind_method(D_METHOD("get_auto_load_workout"),
+                         &GcTrainSession::get_auto_load_workout);
+    ClassDB::bind_method(D_METHOD("load_workout_text"),
+                         &GcTrainSession::load_workout_text);
+    ClassDB::bind_method(D_METHOD("start_session"),
+                         &GcTrainSession::start_session);
+
+    ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "ftp_watts"),
+                 "set_ftp_watts", "get_ftp_watts");
+    ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "weight_kg"),
+                 "set_weight_kg", "get_weight_kg");
+    ADD_PROPERTY(PropertyInfo(Variant::BOOL, "auto_load_workout"),
+                 "set_auto_load_workout", "get_auto_load_workout");
     ClassDB::bind_method(D_METHOD("set_manual_erg"),
                          &GcTrainSession::set_manual_erg);
     ClassDB::bind_method(D_METHOD("clear_manual"),
@@ -92,16 +115,36 @@ void GcTrainSession::_bind_methods() {
 }
 
 void GcTrainSession::_ready() {
-    session_ = gc_session_create(250, 75);
+    session_ = gc_session_create(ftp_watts_, weight_kg_);
     if (session_ == nullptr) {
         return;
     }
-    if (gc_session_load_workout_text(session_, kErgText, "test.erg") !=
-        GC_OK) {
-        return;
+    if (auto_load_workout_) {
+        if (gc_session_load_workout_text(session_, kErgText,
+                                         "test.erg") != GC_OK) {
+            return;
+        }
+        gc_session_start(session_);
     }
-    gc_session_start(session_);
     refresh();
+}
+
+int GcTrainSession::load_workout_text(const String &text,
+                                      const String &source_path) {
+    if (session_ == nullptr) {
+        return GC_ERR_NULL;
+    }
+    CharString text_utf8 = text.utf8();
+    CharString path_utf8 = source_path.utf8();
+    return gc_session_load_workout_text(session_, text_utf8.get_data(),
+                                        path_utf8.get_data());
+}
+
+int GcTrainSession::start_session() {
+    if (session_ == nullptr) {
+        return GC_ERR_NULL;
+    }
+    return gc_session_start(session_);
 }
 
 void GcTrainSession::_process(double delta) {

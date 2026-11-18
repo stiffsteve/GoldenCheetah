@@ -10,6 +10,22 @@
 // instead, which is what the headless proof uses (250 ms per
 // frame, the same cadence as the console dashboard and the C
 // harness, so the numbers are comparable).
+//
+// Rider params and workout loading are properties/methods so
+// a real app can configure the session instead of taking the
+// proof defaults: ftp_watts (250) and weight_kg (75) are read
+// by _ready when it creates the session (they are creation
+// time in the C ABI, so changing them after _ready needs a
+// recreate — there is no mid-session setter), and
+// auto_load_workout (true) controls whether _ready loads the
+// built-in demo workout and starts it. With auto_load_workout
+// off, the session is Idle after _ready and the scene loads a
+// workout itself with load_workout_text() and starts it with
+// start_session() — the flow a real app uses, shown in
+// example.gd. Values set in a .tscn are applied before
+// _ready, which is what makes the properties work for
+// create-time params. The headless test keeps the defaults,
+// so it pins the auto-load behaviour unchanged.
 
 #ifndef GC_TRAIN_SESSION_H
 #define GC_TRAIN_SESSION_H
@@ -55,6 +71,22 @@ public:
     void set_fixed_step_ms(int ms) { fixed_step_ms_ = ms; }
     int get_fixed_step_ms() const { return fixed_step_ms_; }
 
+    void set_ftp_watts(double ftp) { ftp_watts_ = ftp; }
+    double get_ftp_watts() const { return ftp_watts_; }
+    void set_weight_kg(double weight) { weight_kg_ = weight; }
+    double get_weight_kg() const { return weight_kg_; }
+    void set_auto_load_workout(bool auto_load) {
+        auto_load_workout_ = auto_load;
+    }
+    bool get_auto_load_workout() const { return auto_load_workout_; }
+
+    // Load a workout (ERG/MRC text) and start the session.
+    // Both return the C ABI status (0 is GC_OK): load fails
+    // with GC_ERR_STATE unless the session is Idle, which is
+    // why auto_load_workout must be off to load from a scene.
+    int load_workout_text(const String &text, const String &source_path);
+    int start_session();
+
     // Commands, forwarded to the session through the C ABI.
     void set_manual_erg(double target_watts);
     void clear_manual();
@@ -72,6 +104,9 @@ private:
 
     gc_session_t *session_ = nullptr;
     int fixed_step_ms_ = 0;
+    double ftp_watts_ = 250.0;
+    double weight_kg_ = 75.0;
+    bool auto_load_workout_ = true;
     double watts_ = 0;
     double watts_3s_ = 0;
     double heartrate_ = 0;
