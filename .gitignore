@@ -71,6 +71,8 @@ unittests/Core/signalSafety/testSignalSafety
 unittests/Core/units/units
 unittests/Core/physicsUtility/physicsUtility
 unittests/Core/physicsUtility/testPhysicsUtility.moc
+unittests/Core/bicycleSim/bicycleSim
+unittests/Core/bicycleSim/testBicycleSim.moc
 unittests/Gui/calendarData/calendarData
 
 # Qt testlib
