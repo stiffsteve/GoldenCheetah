@@ -124,7 +124,7 @@ func _process(_delta: float) -> void:
 		flat_speed = session.get_speed_kph()
 		session.set_sim_gradient(CLIMB_GRADIENT)
 		climbed = true
-		print("gradient 8% at t=%ds (flat speed was %.1f kph)"
+		print("gradient 8%% at t=%ds (flat speed was %.1f kph)"
 			% [int(elapsed), flat_speed])
 	_update_hud()
 	var second := int(elapsed)
