@@ -94,6 +94,14 @@ void GcTrainSession::_bind_methods() {
                          &GcTrainSession::set_device_kind);
     ClassDB::bind_method(D_METHOD("get_device_kind"),
                          &GcTrainSession::get_device_kind);
+    ClassDB::bind_method(D_METHOD("set_height_cm"),
+                         &GcTrainSession::set_height_cm);
+    ClassDB::bind_method(D_METHOD("get_height_cm"),
+                         &GcTrainSession::get_height_cm);
+    ClassDB::bind_method(D_METHOD("set_bike_weight_kg"),
+                         &GcTrainSession::set_bike_weight_kg);
+    ClassDB::bind_method(D_METHOD("get_bike_weight_kg"),
+                         &GcTrainSession::get_bike_weight_kg);
     ClassDB::bind_method(D_METHOD("set_virtual_watts"),
                          &GcTrainSession::set_virtual_watts);
     ClassDB::bind_method(D_METHOD("load_workout_text"),
@@ -109,6 +117,10 @@ void GcTrainSession::_bind_methods() {
                  "set_auto_load_workout", "get_auto_load_workout");
     ADD_PROPERTY(PropertyInfo(Variant::INT, "device_kind"),
                  "set_device_kind", "get_device_kind");
+    ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "height_cm"),
+                 "set_height_cm", "get_height_cm");
+    ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "bike_weight_kg"),
+                 "set_bike_weight_kg", "get_bike_weight_kg");
     ClassDB::bind_method(D_METHOD("set_manual_erg"),
                          &GcTrainSession::set_manual_erg);
     ClassDB::bind_method(D_METHOD("clear_manual"),
@@ -129,14 +141,11 @@ void GcTrainSession::_bind_methods() {
 }
 
 void GcTrainSession::_ready() {
-    // Height and bike weight are literals until step 4 of the
-    // game plan turns them into properties (175 cm / 8 kg,
-    // the AthleteProfile defaults).
     gc_rider_profile_t profile;
     profile.ftp_watts = ftp_watts_;
     profile.weight_kg = weight_kg_;
-    profile.height_cm = 175;
-    profile.bike_weight_kg = 8;
+    profile.height_cm = height_cm_;
+    profile.bike_weight_kg = bike_weight_kg_;
     gc_device_kind_t kind = device_kind_ == 1
                                 ? GC_DEVICE_VIRTUAL_RIDER
                                 : GC_DEVICE_FAKE;

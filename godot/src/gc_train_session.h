@@ -32,9 +32,13 @@
 // the test and the proofs use), 1 is the VirtualRider (the
 // game device: app-driven watts via set_virtual_watts,
 // speed from the physics model). _ready creates through
-// gc_session_create_rider with the full profile; height_cm
-// and bike_weight_kg are still literals here (175 / 8) and
-// become properties in step 4 of the game plan.
+// gc_session_create_rider with the full profile, from the
+// ftp_watts / weight_kg / height_cm / bike_weight_kg
+// properties (defaults 250 / 75 / 175 / 8, the
+// AthleteProfile defaults). Height is carried in the
+// profile but the instant speed model does not use it —
+// Cd is fixed — so height changes no speed today; weight
+// and bike weight do, through the physics model.
 
 #ifndef GC_TRAIN_SESSION_H
 #define GC_TRAIN_SESSION_H
@@ -93,6 +97,12 @@ public:
     bool get_auto_load_workout() const { return auto_load_workout_; }
     void set_device_kind(int kind) { device_kind_ = kind; }
     int get_device_kind() const { return device_kind_; }
+    void set_height_cm(double height_cm) { height_cm_ = height_cm; }
+    double get_height_cm() const { return height_cm_; }
+    void set_bike_weight_kg(double bike_weight_kg) {
+        bike_weight_kg_ = bike_weight_kg;
+    }
+    double get_bike_weight_kg() const { return bike_weight_kg_; }
 
     // The game's watts input (virtual rider only): returns
     // the C ABI status, GC_ERR_STATE when the session was not
@@ -127,6 +137,8 @@ private:
     double weight_kg_ = 75.0;
     bool auto_load_workout_ = true;
     int device_kind_ = 0;
+    double height_cm_ = 175.0;
+    double bike_weight_kg_ = 8.0;
     double watts_ = 0;
     double watts_3s_ = 0;
     double heartrate_ = 0;

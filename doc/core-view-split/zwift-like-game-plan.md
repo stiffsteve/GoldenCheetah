@@ -341,6 +341,17 @@ by accepting these decisions.
   layer test, the example, and the freeride proof.
   Build fix: SConstruct links PhysicsUtility.cpp +
   BlinnSolver.cpp (see the Godot plan doc).
-- Step 4 PENDING: `height_cm` / `bike_weight_kg` node
-  properties + a proof that the physics responds to the
-  profile.
+- Step 4 DONE (this commit): `height_cm` (175) /
+  `bike_weight_kg` (8) node properties, read by `_ready`
+  into the C ABI profile (no more literals). Proof is
+  `godot/freeride-profile.tscn`, reusing freeride.gd with
+  tighter bounds: a 100 kg rider, 190 cm, 10 kg bike at
+  200 W does 29.1 kph flat and 7.8 kph at 8% over 204 m —
+  against 29.6 / 10.2 / 220 m for the 75 kg rider — so the
+  climb is where the weight shows. The script also fails
+  fast if the node properties do not round-trip the scene
+  values. Height is carried in the profile but has no
+  speed effect in the instant model (Cd is fixed); a
+  height-dependent CdA is later work. `godot-test.sh` now
+  runs four checks (layer test, example, freeride,
+  freeride-profile), all PASS.

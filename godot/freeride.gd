@@ -15,6 +15,17 @@
 # 83 kg is 29.55 kph; at 8% it is 10.16 kph. Distance after
 # 40 s is about 220 m. A flat that still produced speed, or
 # a climb that didn't slow the rider, fails the run.
+#
+# The bounds are @export so the profile scene
+# (freeride-profile.tscn) reuses this script with a heavier
+# rider: 100 kg rider + 10 kg bike is 29.08 kph flat and
+# 7.83 kph at 8% — the climb is where the weight shows, so
+# its bounds are the discriminating check. The scene also
+# sets expect_weight_kg / expect_height_cm /
+# expect_bike_weight_kg, and _ready fails fast if the node
+# properties do not round-trip those values. Height has no
+# speed effect in the instant model (Cd is fixed), so the
+# height check is a round-trip only.
 extends Node
 
 const DURATION_SECS := 40.0
@@ -22,6 +33,19 @@ const CLIMB_AT_SECS := 20.0
 const VIRTUAL_WATTS := 200.0
 const FLAT_GRADIENT := 0.0
 const CLIMB_GRADIENT := 8.0
+
+# Bounds and profile expectations, set by the scene that
+# uses this script. Defaults are the 75 kg rider (83 kg
+# total) in freeride.tscn.
+@export var expect_flat_min := 20.0
+@export var expect_flat_max := 35.0
+@export var expect_climb_min := 5.0
+@export var expect_climb_max := 15.0
+@export var expect_dist_min := 150.0
+@export var expect_dist_max := 300.0
+@export var expect_weight_kg := 75.0
+@export var expect_height_cm := 175.0
+@export var expect_bike_weight_kg := 8.0
 
 # Untyped on purpose: the GcTrainSession native class only
 # exists once the GDExtension loads (see main.gd).
@@ -49,6 +73,22 @@ func _ready() -> void:
 	status = session.start_session()
 	if status != 0:
 		print("freeride-client: FAIL (start_session status %d)" % status)
+		get_tree().quit(1)
+		return
+	# The scene's profile must have reached the node.
+	if session.get_weight_kg() != expect_weight_kg:
+		print("freeride-client: FAIL (weight_kg %.1f, expected %.1f)"
+			% [session.get_weight_kg(), expect_weight_kg])
+		get_tree().quit(1)
+		return
+	if session.get_height_cm() != expect_height_cm:
+		print("freeride-client: FAIL (height_cm %.1f, expected %.1f)"
+			% [session.get_height_cm(), expect_height_cm])
+		get_tree().quit(1)
+		return
+	if session.get_bike_weight_kg() != expect_bike_weight_kg:
+		print("freeride-client: FAIL (bike_weight_kg %.1f, expected %.1f)"
+			% [session.get_bike_weight_kg(), expect_bike_weight_kg])
 		get_tree().quit(1)
 		return
 	_build_hud()
@@ -117,18 +157,21 @@ func _finish() -> void:
 	print("final: flat=%.1f kph climb=%.1f kph dist=%.0f m watts=%.1f"
 		% [flat_speed, climb_speed, distance, watts])
 	var ok := true
-	if not (flat_speed > 20.0 and flat_speed < 35.0):
+	if not (flat_speed > expect_flat_min and flat_speed < expect_flat_max):
 		ok = false
-		print("FAIL: flat speed %.1f outside 20-35 kph" % flat_speed)
-	if not (climb_speed > 5.0 and climb_speed < 15.0):
+		print("FAIL: flat speed %.1f outside %.0f-%.0f kph"
+			% [flat_speed, expect_flat_min, expect_flat_max])
+	if not (climb_speed > expect_climb_min and climb_speed < expect_climb_max):
 		ok = false
-		print("FAIL: climb speed %.1f outside 5-15 kph" % climb_speed)
+		print("FAIL: climb speed %.1f outside %.1f-%.1f kph"
+			% [climb_speed, expect_climb_min, expect_climb_max])
 	if not climb_speed < flat_speed:
 		ok = false
 		print("FAIL: climb did not slow the rider")
-	if not (distance > 150.0 and distance < 300.0):
+	if not (distance > expect_dist_min and distance < expect_dist_max):
 		ok = false
-		print("FAIL: distance %.0f outside 150-300 m" % distance)
+		print("FAIL: distance %.0f outside %.0f-%.0f m"
+			% [distance, expect_dist_min, expect_dist_max])
 	if not (watts > 190.0 and watts < 210.0):
 		ok = false
 		print("FAIL: watts %.1f outside 190-210" % watts)

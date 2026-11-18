@@ -101,6 +101,16 @@ proof), section 12 (game engine integration), section 13
   `--verbose`). Note: `nm -D` does not show the symbol
   (hidden visibility) — the real check is that the
   extension loads and the proofs pass.
+- Profile properties (added 2026-11-18, game support
+  step 4): plugin `height_cm` (175) / `bike_weight_kg` (8)
+  properties, read by `_ready` into the C ABI profile.
+  Proof is `godot/freeride-profile.tscn`, reusing
+  freeride.gd with tighter climb bounds: a 100 kg rider,
+  190 cm, 10 kg bike at 200 W does 29.1 kph flat and
+  7.8 kph at 8% over 204 m, against 29.6 / 10.2 / 220 m
+  for the 75 kg rider. Height is carried in the profile
+  but has no speed effect in the instant model (Cd is
+  fixed). `godot-test.sh` now runs four checks, all PASS.
 - `util/check-core-includes.sh`: PASS on 19 files (new
   GcSessionC.h added). Now 21 files (PhysicsUtility.h,
   VirtualRider.h added by the game support work).

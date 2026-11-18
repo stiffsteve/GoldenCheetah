@@ -1,0 +1,23 @@
+[gd_scene load_steps=2 format=3 uid="uid://gctrainfreerideprof"]
+
+[ext_resource type="Script" path="res://freeride.gd" id="1"]
+
+[node name="FreerideProfile" type="Node"]
+script = ExtResource("1")
+expect_flat_min = 20.0
+expect_flat_max = 35.0
+expect_climb_min = 6.5
+expect_climb_max = 9.5
+expect_dist_min = 150.0
+expect_dist_max = 260.0
+expect_weight_kg = 100.0
+expect_height_cm = 190.0
+expect_bike_weight_kg = 10.0
+
+[node name="GcTrainSession" type="GcTrainSession" parent="."]
+auto_load_workout = false
+device_kind = 1
+ftp_watts = 250.0
+weight_kg = 100.0
+height_cm = 190.0
+bike_weight_kg = 10.0

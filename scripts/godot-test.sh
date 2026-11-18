@@ -20,6 +20,11 @@
 #      app-driven watts and a course gradient, speed from
 #      the physics model). Exit 0 and "freeride-client: PASS"
 #      on success.
+#   4. godot/freeride-profile.tscn: the same free ride with
+#      a heavier rider (100 kg, 190 cm, 10 kg bike), reusing
+#      freeride.gd with tighter climb bounds — the proof the
+#      profile reaches the physics. Exit 0 and
+#      "freeride-client: PASS" on success.
 # Any step failing fails the script.
 #
 # Requires the plugin built and the project imported once
@@ -51,3 +56,5 @@ fi
 "$GODOT_BIN" --headless --path "$REPO/godot" res://example.tscn
 
 "$GODOT_BIN" --headless --path "$REPO/godot" res://freeride.tscn
+
+"$GODOT_BIN" --headless --path "$REPO/godot" res://freeride-profile.tscn
