@@ -17,6 +17,7 @@ equals(GC_UNITTESTS, active) {
 			   Core/telemetryBus \
 			   Core/fakeDevice \
 			   Core/trainSession \
+			   Core/physicsUtility \
 			   Train/trainSessionAdapter \
 			   Gui/calendarData
 	CONFIG += ordered

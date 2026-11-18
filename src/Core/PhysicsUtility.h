@@ -19,6 +19,14 @@
 #if !defined(_PHYSICSUTILITY_H)
 #define _PHYSICSUTILITY_H
 
+// Moved to src/Core 2026-11-18 for the Godot game support work
+// (was src/Train/PhysicsUtility.h); same function, same behaviour.
+// The GUI train view already calls computeInstantSpeed for its
+// virtual speed, and the virtual rider device calls it too.
+// Pure standard C++: no Qt, no Widgets, no Qwt, no GUI —
+// which is what lets it live in core (see
+// util/check-core-includes.sh).
+
 // These Zone 0 Pressure/Density Constants and equations are from wikipedia
 
 static const double s_Pb = 101325;         // static pressure(Pa)
