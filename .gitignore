@@ -75,6 +75,10 @@ unittests/Core/bicycleSim/bicycleSim
 unittests/Core/bicycleSim/testBicycleSim.moc
 unittests/Core/ftms/ftms
 unittests/Core/ftms/testFtms.moc
+unittests/Train/bt40Adapter/bt40Adapter
+unittests/Train/bt40Adapter/testBt40Adapter.moc
+unittests/Train/bt40Scanner/bt40Scanner
+unittests/Train/bt40Scanner/testBt40Scanner.moc
 unittests/Gui/calendarData/calendarData
 
 # Qt testlib

@@ -22,6 +22,8 @@ equals(GC_UNITTESTS, active) {
 			   Core/bicycleSim \
 			   Core/ftms \
 			   Train/trainSessionAdapter \
+			   Train/bt40Adapter \
+			   Train/bt40Scanner \
 			   Gui/calendarData
 	CONFIG += ordered
 } else {
