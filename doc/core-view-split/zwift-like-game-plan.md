@@ -279,12 +279,16 @@ each step is usable and testable on its own.
   dependency is bigger than that, so decide it when the
   step starts. The game code doesn't change: the app talks
   to the session, not to the device.
-- **BicycleSim momentum model in core.** The fuller model
-  (wheels, kinetic energy, watt filtering, altitude
-  penalty) is GUI-coupled today (`Context*`, `RealtimeData`).
-  If the game wants speed to carry momentum through
-  gradient and watts changes instead of jumping instantly,
-  port its stateful part to core. Not needed to start.
+- **BicycleSim momentum model in core.** DONE 2026-11-18
+  (authorised "Both, BicycleSim first"): the fuller model
+  (wheels, kinetic energy, watt filtering) is ported to
+  `src/Core/BicycleSim.h/.cpp` + `src/Core/Integrator.h`,
+  hypoxia out for v1, full 28-value config, both dt
+  overloads, initial velocity 0, pinned by a 15-test suite.
+  VirtualRider is wired to it, so speed now carries
+  momentum through gradient and watts changes instead of
+  jumping instantly. See Status below for the measured
+  numbers.
 - **FIT recording.** Gated already (Phase 4 scope). CSV
   first.
 - **Workouts in the game.** The player, parser, and adapter
@@ -355,3 +359,36 @@ by accepting these decisions.
   height-dependent CdA is later work. `godot-test.sh` now
   runs four checks (layer test, example, freeride,
   freeride-profile), all PASS.
+- BicycleSim port + wiring DONE (2026-11-18, commits
+  6ac763b46 scope doc, 174d4791a + c4ba5a8fd probe,
+  4ec90a1dc port, 00e65a4c6 pinning suite, 26fc0db8d
+  wiring): `git mv` of BicycleSim.h/.cpp + Integrator.h
+  into src/Core, `BicycleConfig` (28 values, SimBicyclePage
+  defaults), `configure()`, both `SampleSpeed` overloads,
+  watt filter in, hypoxia out (field kept, default 1.0,
+  inert). GUI call sites updated with no behaviour change
+  (TrainSidebar, NullController, plus the third caller the
+  scoping missed, `SimBicyclePage::SetStatsLabelArray`).
+  Probe (GUI model, before the port): KE mass 82.545 kg at
+  75 kg rider, wheels +0.5325 kg each; steady states 250 W
+  flat 32.12 kph, 150 W flat 26.52 kph, 250 W at 8% 12.69
+  kph; spike filter clamps to prev + 200 W. Pinning suite
+  (15 tests, dt-explicit, no sleeps) reproduces the probe
+  to ±0.5% steady state / ±2% distance. Wiring: VirtualRider
+  drives the sim with {watts, gradient, altitude} and the
+  device dt; distance from the sim's d, altitude still in
+  the device; `start()` clears the bike. The virtualRider
+  suite's speed pins are now steady-state checks (drive
+  120 s, same 0.05 kph tolerance). Freeride proofs
+  RE-MEASURED with momentum (deterministic, fixed 250 ms
+  steps): 75 kg rider at 200 W — flat 26.5 kph at 20 s
+  (steady 29.55), climb 10.2 kph at 40 s (steady 10.16),
+  distance 184 m; 100 kg rider — flat 24.3 kph, climb
+  7.8 kph, distance 159 m. The old instant-model numbers
+  (29.6 / 10.2 / 220 m and 29.1 / 7.8 / 204 m) are no
+  longer the target; the bounds were tightened so the
+  instant model would fail. Build fix: BicycleSim.cpp
+  needed the `#include <cmath>` it only got transitively
+  in the GUI build — the standalone SCons compile failed
+  without it; SConstruct links BicycleSim.cpp the same way
+  as PhysicsUtility.cpp.

@@ -111,14 +111,38 @@ proof), section 12 (game engine integration), section 13
   for the 75 kg rider. Height is carried in the profile
   but has no speed effect in the instant model (Cd is
   fixed). `godot-test.sh` now runs four checks, all PASS.
+- BicycleSim wiring (added 2026-11-18, BicycleSim port):
+  VirtualRider is wired to the ported BicycleSim momentum
+  model (`src/Core/BicycleSim.h/.cpp`, full 28-value
+  config, watt filter in, hypoxia out for v1, pinned by a
+  15-test suite), so speed now carries momentum instead
+  of jumping instantly; computeInstantSpeed stays as the
+  steady-state oracle. The freeride numbers above were
+  the instant model and are no longer the target —
+  re-measured with momentum (deterministic, fixed 250 ms
+  steps): 75 kg rider at 200 W, flat 26.5 kph at 20 s
+  (steady 29.55), climb 10.2 kph at 40 s (steady 10.16),
+  distance 184 m; 100 kg rider, flat 24.3 kph, climb
+  7.8 kph, distance 159 m. The scene bounds were
+  tightened so the instant model would fail. Build fix:
+  BicycleSim.cpp needed the `#include <cmath>` it only
+  got transitively in the GUI build — the standalone
+  SCons compile failed without it; SConstruct links
+  BicycleSim.cpp the same way as PhysicsUtility.cpp.
 - `util/check-core-includes.sh`: PASS on 19 files (new
-  GcSessionC.h added). Now 21 files (PhysicsUtility.h,
-  VirtualRider.h added by the game support work).
-- All suites pass: 13 test dirs, 0 failed (fakeDevice 18,
-  phase0Mapping 16, season 32, seasonOffset 8, seasonParser
-  3, signalSafety 4+3+3, splineCrash 3, telemetryBus 17,
-  trainSession 16, units 8, utils 3, workoutPlayer 17,
-  trainSessionAdapter 7). Note: a VM refresh during this
+  GcSessionC.h added). Now 23 files (PhysicsUtility.h,
+  VirtualRider.h added by the game support work;
+  BicycleSim.h, Integrator.h added by the BicycleSim
+  port).
+- All suites pass: 17 test dirs, 0 failed (bicycleSim 15,
+  fakeDevice 18, phase0Mapping 16, physicsUtility 10,
+  season 32, seasonOffset 8, seasonParser 3, signalSafety
+  4+2+2 with 2 skips (the check_unsafe_*.py scripts are
+  not found, pre-existing), splineCrash 3, telemetryBus 17,
+  trainSession 17, units 8, utils 3, virtualRider 11,
+  workoutPlayer 17, calendarData 3, trainSessionAdapter 7).
+  Re-verified 2026-11-18 after the BicycleSim port. Note:
+  a VM refresh during this
   work wiped /usr dev deps (libEGL.so.1 missing, so the
   test binaries would not load) and the apt cache was
   empty (system replay autoclean); the baseline script's
