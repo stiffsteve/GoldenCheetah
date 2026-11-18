@@ -203,10 +203,54 @@ settings, no Qt event loop). Wall-clock dt via real sleeps,
    same watts) — speed at +5/+10/+20 s; watts step to 0 at speed —
    coast-down speed at +5/+10 s.
 4. **Spike filter:** a single 1500 W sample after a 200 W tick must
-   clamp to prev + 200 (300 W) — verified by running the 200/1500/
-   200 sequence against a 200/300/200 sequence and comparing speeds.
+   clamp to prev + 200 = **400 W** (not 300 — the clamp adds 200 to
+   the previous tick's watts) — verified by running the 200/1500/
+   200/200 sequence against a 200/400/200/200 sequence and comparing
+   speeds. In the GUI model the two agree only to ~0.06%, because
+   the hypoxia factor (~1.0009 at sea level) applies to the stored
+   previous watts and again after the clamp; in the ported model
+   (hypoxia removed) they are exactly equal, and the suite asserts
+   exact equality.
 
 Altitude-factor measurement is skipped (hypoxia out for v1).
+
+### Probe results (measured 2026-11-18, before the port)
+
+Probe program (throwaway, `/tmp/bicyclesim-probe.cpp`, not in the
+repo): explicit ctor, NULL context, default parts, 75 kg rider,
+100 ms/tick wall-clock dt. Mass 81.480 kg, KE mass 82.545012 kg,
+wheel equivalent mass 0.532506 kg each, front 1.145 kg, rear
+1.335 kg. `KEFromV`/`VFromKE` round-trip exact at 0/1/5/10/15 m/s.
+`WattsForV` grid (60 points, watts 100–300, slopes 0/5/8/−5%,
+altitudes 0/1000/2000 m): agrees with the watts input to
+0.000000000 W at the sim's mass/Cd.
+
+Steady state from rest (speed kph, distance m):
+
+| Case | 5 s | 10 s | 20 s | 30 s | 60 s | dist @60 s |
+|---|---|---|---|---|---|---|
+| 250 W flat | 17.261 | 23.688 | 29.265 | 31.161 | 32.121 | 469.378 |
+| 150 W flat | 13.373 | 18.521 | 23.382 | 25.299 | 26.523 | 379.881 |
+| 250 W @8% | 11.062 | 12.326 | 12.670 | 12.690 | 12.691 | 203.692 |
+| 0 W flat | 0 | 0 | — | — | 0 | 0 |
+
+Oracle (steady state, sim mass/Cd): 250 W flat 32.152, 150 W flat
+26.603, 250 W @8% 12.680 — the 60 s values sit 0.1–0.3% below the
+oracle (still converging on the flat; the climb has converged).
+
+Gradient step (20 s flat, then 8%, 250 W): 29.263 kph at the step,
+19.468 at +5 s, 14.842 at +10 s, 12.833 at +20 s, 12.691 at 60 s;
+distance 283.709 m at 60 s.
+
+Coast-down (30 s at 250 W flat, then 0 W): 31.160 kph at the step,
+26.092 at +5 s, 22.222 at +10 s, 16.699 at +20 s; distance
+330.214 m at 50 s.
+
+Spike filter (100 ms ticks): A (200/1500/200/200) gives
+0.054 / 1.116 / 2.053 / 2.712 kph; C (200/400/200/200) gives
+0.054 / 1.115 / 2.052 / 2.711 kph; B (200/300/200/200) gives
+0.054 / 1.024 / 1.882 / 2.556 kph. A ≈ C (filter clamps to 400 W);
+B is clearly different.
 
 ### Pinning suite
 
