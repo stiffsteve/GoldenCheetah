@@ -69,6 +69,8 @@ unittests/Core/seasonParser/seasonParser
 unittests/Core/signalSafety/testSignalSafety
 unittests/Core/signalSafety/testSignalSafety
 unittests/Core/units/units
+unittests/Core/physicsUtility/physicsUtility
+unittests/Core/physicsUtility/testPhysicsUtility.moc
 unittests/Gui/calendarData/calendarData
 
 # Qt testlib
