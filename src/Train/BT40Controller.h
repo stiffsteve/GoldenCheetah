@@ -29,7 +29,7 @@
 #ifndef _GC_BT40Controller_h
 #define _GC_BT40Controller_h 1
 
-class DeviceInfo;
+class Bt40DeviceInfo;
 
 class BT40Controller : public RealtimeController
 {
@@ -57,6 +57,14 @@ public:
     void setRollingResistance(double);
     void setWindResistance(double);
     void setWheelCircumference(double);
+    // Resistance as a 0..1 level, forwarded to each device's
+    // setLoadIntensity. Added for the FTMS adapter; no legacy
+    // caller uses it.
+    void setResistance(double level_0_1);
+
+    // Link state for the FTMS adapter: true if any device's GATT
+    // link is up. Added for the adapter; no legacy caller uses it.
+    bool isConnected();
 
     // telemetry push pull
     bool doesPush(), doesPull(), doesLoad();
@@ -101,6 +109,7 @@ public:
     uint16_t getCalibrationSpindownTime();
     uint16_t getCalibrationZeroOffset();
     uint16_t getCalibrationSlope();
+    void     resetCalibrationState();
 
 signals:
     void vo2Data(double rf, double rmv, double vo2, double vco2, double tv, double feo2);
@@ -120,7 +129,7 @@ private:
     RealtimeData telemetry;
     QList<BT40Device*> devices;
     DeviceConfiguration* localDc;
-    QList<DeviceInfo> allowedDevices;
+    QList<Bt40DeviceInfo> allowedDevices;
 
     double load;
     double gradient;
@@ -132,11 +141,11 @@ private:
     double wheelSize;
 };
 
-class DeviceInfo
+class Bt40DeviceInfo
 {
 public:
-    DeviceInfo(QString data);
-    DeviceInfo(QString name, QString address, QString uuid);
+    Bt40DeviceInfo(QString data);
+    Bt40DeviceInfo(QString name, QString address, QString uuid);
     QString getName() const;
     QString getAddress() const;
     QString getUuid() const;

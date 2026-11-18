@@ -64,6 +64,7 @@ BT40Device::BT40Device(QObject *parent, QBluetoothDeviceInfo devinfo) : parent(p
     connect(m_control, SIGNAL(discoveryFinished()), this, SLOT(serviceScanDone()), Qt::QueuedConnection);
 
     connected = false;
+    linkUp = false;
     prevWheelTime = 0;
     prevWheelRevs = 0;
     prevWheelStaleness = true;
@@ -110,6 +111,7 @@ BT40Device::disconnectDevice()
 {
     qDebug() << "Disconnecting from device" << m_currentDevice.name() << " " << m_currentDevice.deviceUuid();
     connected = false;
+    linkUp = false;
     reconnectTimer->stop();
     reconnectAttempts = 0;
     m_control->disconnectFromDevice();
@@ -119,7 +121,8 @@ void
 BT40Device::deviceConnected()
 {
     qDebug() << "Connected to device" << m_currentDevice.name() << " " << m_currentDevice.deviceUuid();
-    
+    linkUp = true;
+
     // Stop reconnection timer if it's running
     if (reconnectTimer->isActive()) {
         reconnectTimer->stop();
@@ -140,6 +143,7 @@ void
 BT40Device::deviceDisconnected()
 {
     qDebug() << "Lost connection to" << m_currentDevice.name() << " " << m_currentDevice.deviceUuid();
+    linkUp = false;
 
     // Zero any readings provided by this device
     foreach (QLowEnergyService* const &service, m_services) {

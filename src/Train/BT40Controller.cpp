@@ -39,10 +39,10 @@ BT40Controller::BT40Controller(TrainSidebar *parent, DeviceConfiguration *dc) : 
     {
         foreach (QString deviceInfoString, localDc->deviceProfile.split(","))
         {
-            DeviceInfo deviceInfo(deviceInfoString);
+            Bt40DeviceInfo deviceInfo(deviceInfoString);
             if (deviceInfo.isValid())
             {
-                allowedDevices.append(DeviceInfo(deviceInfoString));
+                allowedDevices.append(Bt40DeviceInfo(deviceInfoString));
             }
         }
     }
@@ -211,7 +211,7 @@ BT40Controller::deviceAllowed(const QBluetoothDeviceInfo& info)
         return true;
     }
 
-    foreach (const DeviceInfo deviceInfo, allowedDevices)
+    foreach (const Bt40DeviceInfo deviceInfo, allowedDevices)
     {
         if (info.address().isNull())
         {
@@ -315,6 +315,30 @@ BT40Controller::getCalibrationSlope() {
 }
 
 void
+BT40Controller::resetCalibrationState() {
+    for (auto* dev : devices) {
+        dev->resetCalibrationState();
+    }
+}
+
+bool
+BT40Controller::isConnected() {
+    for (auto* dev : devices) {
+        if (dev->isConnected()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void
+BT40Controller::setResistance(double level_0_1) {
+    for (auto* dev : devices) {
+        dev->setLoadIntensity(level_0_1);
+    }
+}
+
+void
 BT40Controller::setWheelRpm(double wrpm) {
     telemetry.setWheelRpm(wrpm, true); // record time sample for new rpm data
     telemetry.setSpeed(wrpm * wheelSize / 1000.0 * 60.0 / 1000.0);
@@ -384,7 +408,7 @@ void BT40Controller::setWheelCircumference(double wc)
   }
 }
 
-DeviceInfo::DeviceInfo(QString data)
+Bt40DeviceInfo::Bt40DeviceInfo(QString data)
 {
     QStringList deviceInfo = data.split(";");
     if (deviceInfo.size() == 3)
@@ -395,27 +419,27 @@ DeviceInfo::DeviceInfo(QString data)
     }
 }
 
-DeviceInfo::DeviceInfo(QString name, QString address, QString uuid)
+Bt40DeviceInfo::Bt40DeviceInfo(QString name, QString address, QString uuid)
     : name(name), address(address), uuid(uuid)
 {
 }
 
-QString DeviceInfo::getName() const
+QString Bt40DeviceInfo::getName() const
 {
     return name;
 }
 
-QString DeviceInfo::getUuid() const
+QString Bt40DeviceInfo::getUuid() const
 {
     return uuid;
 }
 
-QString DeviceInfo::getAddress() const
+QString Bt40DeviceInfo::getAddress() const
 {
     return address;
 }
 
-bool DeviceInfo::isValid() const
+bool Bt40DeviceInfo::isValid() const
 {
     // Linux and Windows will report an address and macOS will report an uuid.
     // We can still check for empty values, because we save

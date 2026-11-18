@@ -53,6 +53,10 @@ public:
     void setRollingResistance(double);
     void setWindResistance(double);
     void setWheelCircumference(double);
+    // Resistance as a 0..1 level (FTMS: mapped linearly across
+    // the device's reported range by setLoadIntensity). Public
+    // so the FTMS adapter can drive it; no legacy caller uses it.
+    void setLoadIntensity(double);
 
     uint8_t  getCalibrationType()         { return calibrationData.getType(); }
     uint8_t  getCalibrationState()        { return calibrationData.getState(); }
@@ -60,6 +64,16 @@ public:
     uint16_t getCalibrationSpindownTime() { return calibrationData.getSpindownTime(); }
     double   getCalibrationTargetSpeed()  { return calibrationData.getTargetSpeed(); }
     uint16_t getCalibrationSlope()        { return calibrationData.getSlope(); }
+    void     resetCalibrationState()      { calibrationData.resetCalibrationState(); }
+
+    // Link state (not intent): true once the GATT link is up
+    // (deviceConnected), false once it drops (deviceDisconnected)
+    // or the user disconnects. The existing `connected` member
+    // means "we want to be connected" — it stays true across an
+    // inadvertent drop while the reconnect timer runs — so it
+    // cannot drive the core session's disconnect detection.
+    // The FTMS adapter reads this, not `connected`.
+    bool     isConnected() const          { return linkUp; }
 
 private slots:
     void deviceConnected();
@@ -114,12 +128,12 @@ private:
     FtmsDeviceInformation ftmsDeviceInfo;
 
     bool connected;
+    bool linkUp; // GATT link actually up (see isConnected)
     QTimer *reconnectTimer;
     int reconnectAttempts;
     void getCadence(QDataStream& ds);
     void getWheelRpm(QDataStream& ds);
     void setLoadErg(double);
-    void setLoadIntensity(double);
     void setLoadLevel(int);
     void setRiderCharacteristics(double weight, double rollingResistance, double windResistance);
     void sendSimulationParameters();

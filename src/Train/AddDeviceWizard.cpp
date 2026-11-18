@@ -1071,7 +1071,7 @@ AddPairBTLE::validatePage()
         if (item->isSelected())
         {
             // pack into device info for validation
-            DeviceInfo deviceInfo(
+            Bt40DeviceInfo deviceInfo(
                         item->data(0, NameRole).toString(),
                         item->data(0, AddressRole).toString(),
                         item->data(0, UuidRole).toString());
