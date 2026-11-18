@@ -45,6 +45,12 @@ void GcTrainSession::_bind_methods() {
                          &GcTrainSession::get_cadence);
     ClassDB::bind_method(D_METHOD("get_speed_kph"),
                          &GcTrainSession::get_speed_kph);
+    ClassDB::bind_method(D_METHOD("get_distance_m"),
+                         &GcTrainSession::get_distance_m);
+    ClassDB::bind_method(D_METHOD("get_altitude_m"),
+                         &GcTrainSession::get_altitude_m);
+    ClassDB::bind_method(D_METHOD("get_gradient_pct"),
+                         &GcTrainSession::get_gradient_pct);
     ClassDB::bind_method(D_METHOD("get_target_watts"),
                          &GcTrainSession::get_target_watts);
     ClassDB::bind_method(D_METHOD("get_step_index"),
@@ -84,6 +90,12 @@ void GcTrainSession::_bind_methods() {
                          &GcTrainSession::set_auto_load_workout);
     ClassDB::bind_method(D_METHOD("get_auto_load_workout"),
                          &GcTrainSession::get_auto_load_workout);
+    ClassDB::bind_method(D_METHOD("set_device_kind"),
+                         &GcTrainSession::set_device_kind);
+    ClassDB::bind_method(D_METHOD("get_device_kind"),
+                         &GcTrainSession::get_device_kind);
+    ClassDB::bind_method(D_METHOD("set_virtual_watts"),
+                         &GcTrainSession::set_virtual_watts);
     ClassDB::bind_method(D_METHOD("load_workout_text"),
                          &GcTrainSession::load_workout_text);
     ClassDB::bind_method(D_METHOD("start_session"),
@@ -95,6 +107,8 @@ void GcTrainSession::_bind_methods() {
                  "set_weight_kg", "get_weight_kg");
     ADD_PROPERTY(PropertyInfo(Variant::BOOL, "auto_load_workout"),
                  "set_auto_load_workout", "get_auto_load_workout");
+    ADD_PROPERTY(PropertyInfo(Variant::INT, "device_kind"),
+                 "set_device_kind", "get_device_kind");
     ClassDB::bind_method(D_METHOD("set_manual_erg"),
                          &GcTrainSession::set_manual_erg);
     ClassDB::bind_method(D_METHOD("clear_manual"),
@@ -115,7 +129,18 @@ void GcTrainSession::_bind_methods() {
 }
 
 void GcTrainSession::_ready() {
-    session_ = gc_session_create(ftp_watts_, weight_kg_);
+    // Height and bike weight are literals until step 4 of the
+    // game plan turns them into properties (175 cm / 8 kg,
+    // the AthleteProfile defaults).
+    gc_rider_profile_t profile;
+    profile.ftp_watts = ftp_watts_;
+    profile.weight_kg = weight_kg_;
+    profile.height_cm = 175;
+    profile.bike_weight_kg = 8;
+    gc_device_kind_t kind = device_kind_ == 1
+                                ? GC_DEVICE_VIRTUAL_RIDER
+                                : GC_DEVICE_FAKE;
+    session_ = gc_session_create_rider(&profile, kind);
     if (session_ == nullptr) {
         return;
     }
@@ -171,6 +196,9 @@ void GcTrainSession::refresh() {
     heartrate_ = sample.heartrate;
     cadence_ = sample.cadence;
     speed_kph_ = sample.speed_kph;
+    distance_m_ = sample.distance_m;
+    altitude_m_ = sample.altitude_m;
+    gradient_pct_ = sample.gradient_pct;
     target_watts_ = sample.target_watts;
     power_valid_ = sample.power_valid != 0;
     hr_valid_ = sample.hr_valid != 0;
@@ -195,6 +223,13 @@ void GcTrainSession::refresh() {
         last_state_ = state_;
         emit_signal("state_changed", state_);
     }
+}
+
+int GcTrainSession::set_virtual_watts(double watts) {
+    if (session_ == nullptr) {
+        return GC_ERR_NULL;
+    }
+    return gc_session_set_virtual_watts(session_, watts);
 }
 
 void GcTrainSession::set_manual_erg(double target_watts) {

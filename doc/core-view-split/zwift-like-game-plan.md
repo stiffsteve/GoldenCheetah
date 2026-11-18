@@ -313,3 +313,34 @@ Support work (steps 1–4) authorised 2026-11-18, in small
 verified steps with at least one commit per step; the app
 (step 5) is a separate piece of work and is not authorised
 by accepting these decisions.
+
+## Status, 2026-11-18
+
+- Step 1 DONE (b4807f48d): `setSimGradient` always sets
+  `sim_active_`, so 0% is a live flat, not "no sim"; new
+  test `simGradientZeroIsLiveNotOff` (trainSession suite
+  now 17 Totals), verified failing on the old code.
+- Step 2 DONE (d4fb7bf8e, plus 8197f32b4 untracking the
+  build artifacts the commit accidentally included):
+  PhysicsUtility moved `src/Train/` → `src/Core/`, new
+  physicsUtility suite pins the pre-move values (flat
+  250 W 32.08 kph, climb 8% 12.48 kph, descent −5%
+  48.49 kph, 0 W 0). GUI build re-run and clean (qmake 0,
+  sub-src 0, --version V3.8 (5015)), check-core-includes
+  PASS on 20 files.
+- Step 3 DONE (55d6f2097, f8ee33ca6, this commit):
+  VirtualRider (core, header-only ITrainer) + virtualRider
+  suite (9 tests, 11 Totals); C ABI `gc_rider_profile_t`,
+  `gc_device_kind_t`, `gc_session_create_rider`, and
+  `gc_session_set_virtual_watts` (additive — old create
+  kept, C harness still PASS with identical numbers);
+  plugin `device_kind` property, `set_virtual_watts`,
+  distance/altitude/gradient getters; freeride proof scene
+  PASS (40 s, 200 W flat then 8%: flat 29.6 kph, climb
+  10.2 kph, distance 220 m). `godot-test.sh` now runs the
+  layer test, the example, and the freeride proof.
+  Build fix: SConstruct links PhysicsUtility.cpp +
+  BlinnSolver.cpp (see the Godot plan doc).
+- Step 4 PENDING: `height_cm` / `bike_weight_kg` node
+  properties + a proof that the physics responds to the
+  profile.

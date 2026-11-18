@@ -26,6 +26,15 @@
 // _ready, which is what makes the properties work for
 // create-time params. The headless test keeps the defaults,
 // so it pins the auto-load behaviour unchanged.
+//
+// device_kind (0, default) selects the trainer the session
+// builds: 0 is the FakeDevice (scripted test double, what
+// the test and the proofs use), 1 is the VirtualRider (the
+// game device: app-driven watts via set_virtual_watts,
+// speed from the physics model). _ready creates through
+// gc_session_create_rider with the full profile; height_cm
+// and bike_weight_kg are still literals here (175 / 8) and
+// become properties in step 4 of the game plan.
 
 #ifndef GC_TRAIN_SESSION_H
 #define GC_TRAIN_SESSION_H
@@ -53,6 +62,9 @@ public:
     double get_heartrate() const { return heartrate_; }
     double get_cadence() const { return cadence_; }
     double get_speed_kph() const { return speed_kph_; }
+    double get_distance_m() const { return distance_m_; }
+    double get_altitude_m() const { return altitude_m_; }
+    double get_gradient_pct() const { return gradient_pct_; }
     double get_target_watts() const { return target_watts_; }
     int get_step_index() const { return step_index_; }
     int get_state() const { return state_; }
@@ -79,6 +91,13 @@ public:
         auto_load_workout_ = auto_load;
     }
     bool get_auto_load_workout() const { return auto_load_workout_; }
+    void set_device_kind(int kind) { device_kind_ = kind; }
+    int get_device_kind() const { return device_kind_; }
+
+    // The game's watts input (virtual rider only): returns
+    // the C ABI status, GC_ERR_STATE when the session was not
+    // created with device_kind 1.
+    int set_virtual_watts(double watts);
 
     // Load a workout (ERG/MRC text) and start the session.
     // Both return the C ABI status (0 is GC_OK): load fails
@@ -107,11 +126,15 @@ private:
     double ftp_watts_ = 250.0;
     double weight_kg_ = 75.0;
     bool auto_load_workout_ = true;
+    int device_kind_ = 0;
     double watts_ = 0;
     double watts_3s_ = 0;
     double heartrate_ = 0;
     double cadence_ = 0;
     double speed_kph_ = 0;
+    double distance_m_ = 0;
+    double altitude_m_ = 0;
+    double gradient_pct_ = 0;
     double target_watts_ = 0;
     int step_index_ = -1;
     int last_step_index_ = -2;

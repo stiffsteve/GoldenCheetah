@@ -78,8 +78,32 @@ proof), section 12 (game engine integration), section 13
   auto_load_workout must be off to load from a scene. One
   build fix recorded: godot-cpp's `String::utf8()` returns
   a `CharString`, not a `PackedByteArray`.
+- Virtual rider support (added 2026-11-18, game support
+  step 3): plugin `device_kind` property (0 = FakeDevice,
+  1 = VirtualRider, default 0), `set_virtual_watts`
+  returning the C ABI status, and `get_distance_m` /
+  `get_altitude_m` / `get_gradient_pct` getters; `_ready`
+  now creates through `gc_session_create_rider` with the
+  full profile (height/bike still the literals 175 / 8
+  until game step 4 makes them properties). Free-ride proof
+  scene (`godot/freeride.tscn` + `freeride.gd`, also run by
+  `./scripts/godot-test.sh`): PASS, exit 0 — 40 s, 200 W
+  flat then 8%, final flat 29.6 kph, climb 10.2 kph,
+  distance 220 m, watts 200.0. Build fix recorded: the
+  plugin links `src/Core/PhysicsUtility.cpp` +
+  `src/Metrics/BlinnSolver.cpp` via SConstruct —
+  VirtualRider's tick calls computeInstantSpeed, a compiled
+  function, and without those objects the .so fails to load
+  with "undefined symbol: computeInstantSpeed", which Godot
+  reports only as "Can't open dynamic library", leaving
+  every GcTrainSession node a placeholder and every scene
+  looping forever on script errors (diagnosed with
+  `--verbose`). Note: `nm -D` does not show the symbol
+  (hidden visibility) — the real check is that the
+  extension loads and the proofs pass.
 - `util/check-core-includes.sh`: PASS on 19 files (new
-  GcSessionC.h added).
+  GcSessionC.h added). Now 21 files (PhysicsUtility.h,
+  VirtualRider.h added by the game support work).
 - All suites pass: 13 test dirs, 0 failed (fakeDevice 18,
   phase0Mapping 16, season 32, seasonOffset 8, seasonParser
   3, signalSafety 4+3+3, splineCrash 3, telemetryBus 17,

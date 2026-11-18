@@ -15,7 +15,12 @@
 #      the scene file, workout loaded from disk, explicit
 #      start) and checks its own result. Exit 0 and
 #      "example-client: PASS" on success.
-# Either step failing fails the script.
+#   3. godot/freeride.tscn: the free-ride proof for the game
+#      (node configured with the VirtualRider, no workout:
+#      app-driven watts and a course gradient, speed from
+#      the physics model). Exit 0 and "freeride-client: PASS"
+#      on success.
+# Any step failing fails the script.
 #
 # Requires the plugin built and the project imported once
 # (scripts/godot-setup.sh does both). The Godot binary is
@@ -44,3 +49,5 @@ fi
     -s "$REPO/godot/test_gctrain_session.gd"
 
 "$GODOT_BIN" --headless --path "$REPO/godot" res://example.tscn
+
+"$GODOT_BIN" --headless --path "$REPO/godot" res://freeride.tscn

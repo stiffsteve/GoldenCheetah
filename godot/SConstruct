@@ -8,15 +8,30 @@
 # not link Qt. godot-cpp lives in godot/godot-cpp (branch
 # godot-4.5-stable, matching Godot 4.5.1) and is git-ignored:
 # it is a build dependency, not part of this repo.
+#
+# Core sources the plugin links: most of the core is
+# header-only, but VirtualRider's tick calls
+# computeInstantSpeed, a compiled function in
+# src/Core/PhysicsUtility.cpp (with its cubic solver in
+# src/Metrics/BlinnSolver.cpp). The plugin must link both
+# translation units, or the .so fails to load with an
+# undefined symbol — which Godot reports only as "Can't
+# open dynamic library", leaving every GcTrainSession node
+# a placeholder. Keep this list in step with the core the
+# plugin actually calls; ../src/Metrics is on the include
+# path because PhysicsUtility.cpp includes "BlinnSolver.h".
 
 import os
 
 env = SConscript("godot-cpp/SConstruct")
 
-env.Append(CPPPATH=["../src", "src"])
+env.Append(CPPPATH=["../src", "../src/Metrics", "src"])
 env.Append(CXXFLAGS=["-std=c++17"])
 
-sources = Glob("src/*.cpp")
+sources = Glob("src/*.cpp") + [
+    "../src/Core/PhysicsUtility.cpp",
+    "../src/Metrics/BlinnSolver.cpp",
+]
 library = env.SharedLibrary(
     "bin/libgctrain.linux.template_debug.x86_64.so", source=sources
 )

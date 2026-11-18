@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3 uid="uid://gctrainfreeride"]
+
+[ext_resource type="Script" path="res://freeride.gd" id="1"]
+
+[node name="Freeride" type="Node"]
+script = ExtResource("1")
+
+[node name="GcTrainSession" type="GcTrainSession" parent="."]
+auto_load_workout = false
+device_kind = 1
+ftp_watts = 250.0
+weight_kg = 75.0
