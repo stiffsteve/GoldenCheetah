@@ -68,6 +68,7 @@ else
         "$REPO_ROOT/src/Core/TrainSession.h"
         "$REPO_ROOT/src/Core/GcSessionC.h"
         "$REPO_ROOT/src/Core/PhysicsUtility.h"
+        "$REPO_ROOT/src/Core/VirtualRider.h"
     )
 fi
 
