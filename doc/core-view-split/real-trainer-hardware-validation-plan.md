@@ -328,13 +328,21 @@ make -j$(nproc)
 This builds `gc-train-ble-headless` in `src/Train/`. It is
 deliberately **not** wired into `build.pro`: a standalone
 program, like the other headless programs. It links the
-prebuilt objects from the `sub-src` build
-(`Bt40DeviceAdapter`, `Bt40Backend`, `BT40Controller`,
+prebuilt objects from the `sub-src` build, so `sub-src` must
+have run first — the list is the production BT40 link
+closure, found by iterating the linker (see the `.pro`):
+`Bt40DeviceAdapter`, `Bt40Backend`, `BT40Controller`,
 `BT40Device`, `Ftms`, `Bt40Scanner`, `CalibrationData`,
-`DeviceConfiguration`, `RealtimeData`, plus the BT40 moc
-objects), so `sub-src` must have run first. Qt modules
-needed: core + bluetooth only (`QProgressDialog` is an
-unused include in `BT40Controller.cpp` — no widgets link).
+`DeviceConfiguration`, `RealtimeData`, `PhysicsUtility`,
+`BlinnSolver`, `RealtimeController` (+ moc), `Settings`,
+`DeviceTypes`, `ANTMessage`, `VMProWidget` (+ moc),
+`VMProConfigurator` (+ moc), `Colors` (+ moc), `Utils`,
+`KurtInRide`, `KurtSmartControl`, `PolynomialRegression`
+(+ the BT40 moc objects). Qt modules needed: core +
+bluetooth + widgets + core5compat + svg — widgets comes
+in through `RealtimeController` → `VMProWidget`, svg and
+core5compat through `Colors` (`QSvgRenderer`, `QRegExp`);
+the harness itself never shows a widget.
 
 ### 5.4 Pre-flight checks
 
@@ -344,8 +352,11 @@ bluetoothctl scan on     # the Hub appears (Ctrl-C to stop)
 ```
 
 Pedal once to wake the Hub first. If `bluetoothctl` does
-not work in this terminal, stop — the harness will not
-work either.
+not work in this terminal, stop — the harness will not work
+either. Qt may log a `Missing CAP_NET_ADMIN permission`
+warning while scanning — that is about address-type
+detection, not a failure; the scan listing the Hub is what
+matters.
 
 ### 5.5 Run it
 
