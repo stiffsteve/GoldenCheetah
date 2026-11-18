@@ -20,6 +20,7 @@ equals(GC_UNITTESTS, active) {
 			   Core/physicsUtility \
 			   Core/virtualRider \
 			   Core/bicycleSim \
+			   Core/ftms \
 			   Train/trainSessionAdapter \
 			   Gui/calendarData
 	CONFIG += ordered

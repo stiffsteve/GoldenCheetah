@@ -73,6 +73,8 @@ unittests/Core/physicsUtility/physicsUtility
 unittests/Core/physicsUtility/testPhysicsUtility.moc
 unittests/Core/bicycleSim/bicycleSim
 unittests/Core/bicycleSim/testBicycleSim.moc
+unittests/Core/ftms/ftms
+unittests/Core/ftms/testFtms.moc
 unittests/Gui/calendarData/calendarData
 
 # Qt testlib
