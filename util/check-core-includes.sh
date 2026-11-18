@@ -69,6 +69,8 @@ else
         "$REPO_ROOT/src/Core/GcSessionC.h"
         "$REPO_ROOT/src/Core/PhysicsUtility.h"
         "$REPO_ROOT/src/Core/VirtualRider.h"
+        "$REPO_ROOT/src/Core/BicycleSim.h"
+        "$REPO_ROOT/src/Core/Integrator.h"
     )
 fi
 

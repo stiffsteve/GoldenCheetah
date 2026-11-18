@@ -74,13 +74,97 @@
 
 #include "TrainDB.h"
 #include "Library.h"
+#include "Pages.h"
 
 #if defined(GC_HAVE_VLC)||defined(GC_VIDEO_QT6) // RLV currently only support for VLC
 #define USE_RLV
 #endif
 
+// Build a BicycleConfig from the athlete's settings — the values
+// Bicycle::Reset(context) used to read. Lives in Train because it
+// reads Context/athlete/settings; the model itself takes the plain
+// struct (see src/Core/BicycleSim.h). With a NULL context the
+// defaults apply, as Reset(NULL) did. The trainer altitude is
+// carried but unused in v1 (hypoxia out); the altitude correction
+// factor stays 1.0.
+static BicycleConfig
+bicycleConfigFromContext(Context *context)
+{
+    BicycleConfig config;
+
+    if (context != NULL) {
+        config.rider_weight_kg =
+            context->athlete->getWeight(QDate::currentDate());
+
+        double simBikeValues[SimBicyclePage::BicycleParts::LastPart];
+        for (int i = 0; i < SimBicyclePage::BicycleParts::LastPart; i++) {
+            simBikeValues[i] =
+                SimBicyclePage::GetBicyclePartValue(context, i);
+        }
+
+        config.bike_mass_without_wheels_g =
+            simBikeValues[SimBicyclePage::BicycleWithoutWheelsG];
+        config.front_wheel_g =
+            simBikeValues[SimBicyclePage::FrontWheelG];
+        config.front_spoke_count =
+            simBikeValues[SimBicyclePage::FrontSpokeCount];
+        config.front_spoke_nipple_g =
+            simBikeValues[SimBicyclePage::FrontSpokeNippleG];
+        config.front_rim_g =
+            simBikeValues[SimBicyclePage::FrontRimG];
+        config.front_rotor_g =
+            simBikeValues[SimBicyclePage::FrontRotorG];
+        config.front_skewer_g =
+            simBikeValues[SimBicyclePage::FrontSkewerG];
+        config.front_tire_g =
+            simBikeValues[SimBicyclePage::FrontTireG];
+        config.front_tube_sealant_g =
+            simBikeValues[SimBicyclePage::FrontTubeSealantG];
+        config.front_outer_radius_m =
+            simBikeValues[SimBicyclePage::FrontOuterRadiusM];
+        config.front_rim_inner_radius_m =
+            simBikeValues[SimBicyclePage::FrontRimInnerRadiusM];
+        config.rear_wheel_g =
+            simBikeValues[SimBicyclePage::RearWheelG];
+        config.rear_spoke_count =
+            simBikeValues[SimBicyclePage::RearSpokeCount];
+        config.rear_spoke_nipple_g =
+            simBikeValues[SimBicyclePage::RearSpokeNippleG];
+        config.rear_rim_g =
+            simBikeValues[SimBicyclePage::RearRimG];
+        config.rear_rotor_g =
+            simBikeValues[SimBicyclePage::RearRotorG];
+        config.rear_skewer_g =
+            simBikeValues[SimBicyclePage::RearSkewerG];
+        config.rear_tire_g =
+            simBikeValues[SimBicyclePage::RearTireG];
+        config.rear_tube_sealant_g =
+            simBikeValues[SimBicyclePage::RearTubeSealantG];
+        config.rear_outer_radius_m =
+            simBikeValues[SimBicyclePage::RearOuterRadiusM];
+        config.rear_rim_inner_radius_m =
+            simBikeValues[SimBicyclePage::RearRimInnerRadiusM];
+        config.cassette_g =
+            simBikeValues[SimBicyclePage::CassetteG];
+        config.crr =
+            simBikeValues[SimBicyclePage::CRR];
+        config.Cm =
+            simBikeValues[SimBicyclePage::Cm];
+        config.Cd =
+            simBikeValues[SimBicyclePage::Cd];
+        config.frontal_area_m2 =
+            simBikeValues[SimBicyclePage::Am2];
+        config.temp_kelvin =
+            simBikeValues[SimBicyclePage::Tk];
+        config.trainer_altitude_m =
+            simBikeValues[SimBicyclePage::ActualTrainerAltitudeM];
+    }
+
+    return config;
+}
+
 TrainSidebar::TrainSidebar(Context *context) : GcWindow(context), context(context),
-    bicycle(context), rtData(context, 0, 0, 0)
+    bicycle(bicycleConfigFromContext(context)), rtData(context, 0, 0, 0)
 {
     // Athlete
     FTP=285; // default to 285 if zones are not set
@@ -802,7 +886,7 @@ TrainSidebar::configChanged(qint32 why)
     }
 
     // Reinit Bicycle
-    bicycle.Reset(context);
+    bicycle.configure(bicycleConfigFromContext(context));
 }
 
 /*----------------------------------------------------------------------
@@ -1964,7 +2048,7 @@ void TrainSidebar::guiUpdate()           // refreshes the telemetry
             // trainer which in ergo mode will be dictated by your gear and cadence,
             // and in slope mode is whatever the trainer happens to implement.
             if (useSimulatedSpeed && !deviceIsFootpod) {
-                BicycleSimState newState(rtData);
+                BicycleSimState newState(rtData.getWatts(), rtData.getSlope(), rtData.getAltitude());
                 SpeedDistance ret = bicycle.SampleSpeed(newState);
 
                 rtData.setSpeed(ret.v);

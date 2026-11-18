@@ -85,7 +85,7 @@ good current bike. Wheels are shimano c40 with conti tubeless tires."
 | `PhysicsUtility.h` (`AirDensity`, `MsToKmh`, `s_g0`) | `WattsForV` | Already in core. No work. | — |
 | Qt (any) | — | None in the physics. No `QObject`, `QString`, `QVector`, `QDate` (except via `Reset`'s `QDate::currentDate()`, which goes away with `Context*`). | — |
 
-### Callers (only two, both in `src/Train/`)
+### Callers (three — the scoping missed the third)
 
 - **`TrainSidebar`** (`TrainSidebar.h:56` include, `:330` member,
   constructed `bicycle(context)` at `TrainSidebar.cpp:83`):
@@ -101,6 +101,13 @@ good current bike. Wheels are shimano c40 with conti tubeless tires."
   `SampleSpeed` in `getRealtimeData` (:88–90) with randomised watts;
   `clear()` on start/restart (:53, :67). `NULL` context is the
   existing "default config" path.
+- **`SimBicyclePage`** (`src/Gui/Pages.cpp`, `SetStatsLabelArray`,
+  ~:967): the settings page built wheels + constants from the
+  spinbox values and constructed a `Bicycle` with the 6-arg ctor to
+  display derived stats (KE mass, wheel masses, inertias). The port
+  replaces that with a `BicycleConfig` filled from the spinboxes —
+  the wheel math now lives in `Bicycle::Init` only, and the stats
+  are identical (same inputs, same acf 1.0, rider mass 0 as before).
 
 `RealtimeController` does not reference `Bicycle`. No tests reference
 it. The 6-arg explicit ctor (`Bicycle(Context*, constants, ...)`) is

@@ -993,27 +993,40 @@ SimBicyclePage::SetStatsLabelArray(double )
     const double rearTubeOrSealantG        = m_SpinBoxArr[SimBicyclePage::RearTubeSealantG     ]->value();
     const double cassetteG                 = m_SpinBoxArr[SimBicyclePage::CassetteG            ]->value();
 
-    const double frontWheelG = bareFrontWheelG + frontRotorG + frontSkewerG + frontTireG + frontTubeOrSealantG;
-    const double frontWheelRotatingG = frontRimG + frontTireG + frontTubeOrSealantG + (frontSpokeCount * frontSpokeNippleG);
-    const double frontWheelCenterG = frontWheelG - frontWheelRotatingG;
+    // The wheel/constants math lives in Bicycle::Init now; the page
+    // only fills the config from the spinboxes and reads the derived
+    // stats back. Same inputs, same stats as before.
+    BicycleConfig config;
+    config.rider_weight_kg = riderMassKG;
+    config.bike_mass_without_wheels_g = bicycleMassWithoutWheelsG;
+    config.front_wheel_g = bareFrontWheelG;
+    config.front_spoke_count = frontSpokeCount;
+    config.front_spoke_nipple_g = frontSpokeNippleG;
+    config.front_rim_g = frontRimG;
+    config.front_rotor_g = frontRotorG;
+    config.front_skewer_g = frontSkewerG;
+    config.front_tire_g = frontTireG;
+    config.front_tube_sealant_g = frontTubeOrSealantG;
+    config.front_outer_radius_m = frontWheelOuterRadiusM;
+    config.front_rim_inner_radius_m = frontRimInnerRadiusM;
+    config.rear_wheel_g = bareRearWheelG;
+    config.rear_spoke_count = rearSpokeCount;
+    config.rear_spoke_nipple_g = rearSpokeNippleG;
+    config.rear_rim_g = rearRimG;
+    config.rear_rotor_g = rearRotorG;
+    config.rear_skewer_g = rearSkewerG;
+    config.rear_tire_g = rearTireG;
+    config.rear_tube_sealant_g = rearTubeOrSealantG;
+    config.rear_outer_radius_m = rearWheelOuterRadiusM;
+    config.rear_rim_inner_radius_m = rearRimInnerRadiusM;
+    config.cassette_g = cassetteG;
+    config.crr = m_SpinBoxArr[SimBicyclePage::CRR]->value();
+    config.Cm = m_SpinBoxArr[SimBicyclePage::Cm]->value();
+    config.Cd = m_SpinBoxArr[SimBicyclePage::Cd]->value();
+    config.frontal_area_m2 = m_SpinBoxArr[SimBicyclePage::Am2]->value();
+    config.temp_kelvin = m_SpinBoxArr[SimBicyclePage::Tk]->value();
 
-    BicycleWheel frontWheel(frontWheelOuterRadiusM, frontRimInnerRadiusM, frontWheelG / 1000, frontWheelCenterG /1000, frontSpokeCount, frontSpokeNippleG/1000);
-
-    const double rearWheelG = bareRearWheelG + cassetteG + rearRotorG + rearSkewerG + rearTireG + rearTubeOrSealantG;
-    const double rearWheelRotatingG = rearRimG + rearTireG + rearTubeOrSealantG + (rearSpokeCount * rearSpokeNippleG);
-    const double rearWheelCenterG = rearWheelG - rearWheelRotatingG;
-
-    BicycleWheel rearWheel (rearWheelOuterRadiusM,  rearRimInnerRadiusM,  rearWheelG / 1000,  rearWheelCenterG / 1000,  rearSpokeCount,  rearSpokeNippleG/1000);
-
-    BicycleConstants constants(
-        m_SpinBoxArr[SimBicyclePage::CRR]->value(),
-        m_SpinBoxArr[SimBicyclePage::Cm] ->value(),
-        m_SpinBoxArr[SimBicyclePage::Cd] ->value(),
-        m_SpinBoxArr[SimBicyclePage::Am2]->value(),
-        m_SpinBoxArr[SimBicyclePage::Tk] ->value(),
-        1.);
-
-    Bicycle bicycle(NULL, constants, riderMassKG, bicycleMassWithoutWheelsG / 1000., frontWheel, rearWheel);
+    Bicycle bicycle(config);
 
     m_StatsTextArr[StatsTotalKEMass]         = tr("Total KEMass");
     m_StatsLabelArr[StatsTotalKEMass]        ->setText(tr("%1 g").arg(bicycle.KEMass()));
