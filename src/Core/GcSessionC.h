@@ -40,12 +40,17 @@
 //    GC_ERR_NULL is the answer to a null handle, not a
 //    segfault. A destroyed handle must not be used again;
 //    the wrapper cannot detect that, and says so here.
-//  - One FakeDevice trainer, owned by the session. The
-//    wrapper creates it, the session owns it (TDD Q6), and
-//    the wrapper keeps a raw pointer only to tick it.
-//    Real-device support is gated work, not this client.
+//  - One trainer, owned by the session. The wrapper creates
+//    it, the session owns it (TDD Q6), and the wrapper keeps
+//    a raw pointer only to tick it. gc_session_create builds
+//    the original FakeDevice (scripted test double, used by
+//    the C harness, the layer test, and the main proof);
+//    gc_session_create_rider builds either the FakeDevice or
+//    the VirtualRider (the game device: app-driven watts,
+//    speed from the physics model). Real-device support is
+//    gated work, not this client.
 //  - One tick drives everything. gc_session_tick(dt_ms)
-//    advances the FakeClock, ticks the FakeDevice, then ticks
+//    advances the FakeClock, ticks the device, then ticks
 //    the session, in that order — the same order the console
 //    dashboard uses. A game client calls tick once per frame
 //    with the frame delta and polls afterwards; it never
@@ -127,7 +132,26 @@ typedef struct gc_live_metrics {
     double tss_so_far;
 } gc_live_metrics_t;
 
+// Rider profile, passed at creation (creation time, like
+// the FTP/weight the old create takes — there is no
+// mid-session setter). Height and bike weight feed the
+// physics model through AthleteProfile; the rider name does
+// not cross into core (it is app-side only).
+typedef struct gc_rider_profile {
+    double ftp_watts;
+    double weight_kg;
+    double height_cm;
+    double bike_weight_kg;
+} gc_rider_profile_t;
+
+typedef enum gc_device_kind {
+    GC_DEVICE_FAKE = 0,         // scripted test double
+    GC_DEVICE_VIRTUAL_RIDER = 1 // game device, app-driven watts
+} gc_device_kind_t;
+
 gc_session_t *gc_session_create(double ftp_watts, double weight_kg);
+gc_session_t *gc_session_create_rider(
+    const gc_rider_profile_t *profile, gc_device_kind_t device_kind);
 void gc_session_destroy(gc_session_t *session);
 
 gc_status_t gc_session_load_workout_text(gc_session_t *session,
@@ -155,6 +179,12 @@ double gc_session_time_remaining_secs(gc_session_t *session);
 gc_status_t gc_session_set_manual_erg(gc_session_t *session,
                                       double target_watts);
 gc_status_t gc_session_clear_manual(gc_session_t *session);
+
+// The game's watts input, for the virtual rider device only:
+// GC_ERR_STATE when the session was not created with
+// GC_DEVICE_VIRTUAL_RIDER.
+gc_status_t gc_session_set_virtual_watts(gc_session_t *session,
+                                         double watts);
 gc_status_t gc_session_set_sim_gradient(gc_session_t *session,
                                         double gradient_pct);
 gc_status_t gc_session_set_slope(gc_session_t *session,
@@ -169,6 +199,7 @@ gc_status_t gc_session_set_slope(gc_session_t *session,
 #include "Core/FakeDevice.h"
 #include "Core/Recorder.h"
 #include "Core/TrainSession.h"
+#include "Core/VirtualRider.h"
 #include "Core/WorkoutParser.h"
 
 #include <memory>
@@ -181,22 +212,51 @@ struct GcSession {
     TrainSession session;
     NullRecorder recorder;
     FakeDevice *fake = nullptr;
+    VirtualRider *virtual_rider = nullptr;
 
     GcSession(double ftp_watts, double weight_kg) {
+        gc_rider_profile_t profile;
+        profile.ftp_watts = ftp_watts;
+        profile.weight_kg = weight_kg;
+        profile.height_cm = 175;
+        profile.bike_weight_kg = 8;
+        init(profile, GC_DEVICE_FAKE);
+    }
+
+    GcSession(const gc_rider_profile_t &profile,
+              gc_device_kind_t device_kind) {
+        init(profile, device_kind);
+    }
+
+    void init(const gc_rider_profile_t &profile,
+              gc_device_kind_t device_kind) {
         clock.setMonotonicMs(0);
         clock.setWallclockMs(1700000000000LL);
         session.setClock(&clock);
-        AthleteProfile profile;
-        profile.ftp_watts = ftp_watts;
-        profile.weight_kg = weight_kg;
-        session.setAthleteProfile(profile);
+        AthleteProfile athlete_profile;
+        athlete_profile.ftp_watts = profile.ftp_watts;
+        athlete_profile.weight_kg = profile.weight_kg;
+        athlete_profile.height_cm = profile.height_cm;
+        athlete_profile.bike_weight_kg = profile.bike_weight_kg;
+        session.setAthleteProfile(athlete_profile);
         session.setRecorder(&recorder);
-        FakeDeviceConfig config;
-        config.name = "godot-trainer";
-        config.erg_tau_ms = 1000;
-        auto device = std::make_unique<FakeDevice>(config);
-        fake = device.get();
-        session.addDevice(std::move(device));
+        if (device_kind == GC_DEVICE_VIRTUAL_RIDER) {
+            VirtualRiderConfig config;
+            config.name = "godot-rider";
+            config.rider_weight_kg = profile.weight_kg;
+            config.bike_weight_kg = profile.bike_weight_kg;
+            config.erg_tau_ms = 1000;
+            auto device = std::make_unique<VirtualRider>(config);
+            virtual_rider = device.get();
+            session.addDevice(std::move(device));
+        } else {
+            FakeDeviceConfig config;
+            config.name = "godot-trainer";
+            config.erg_tau_ms = 1000;
+            auto device = std::make_unique<FakeDevice>(config);
+            fake = device.get();
+            session.addDevice(std::move(device));
+        }
     }
 };
 
@@ -247,6 +307,15 @@ inline gc_session_t *gc_session_create(double ftp_watts,
                                        double weight_kg) {
     return reinterpret_cast<gc_session_t *>(
         new gc_session_c_detail::GcSession(ftp_watts, weight_kg));
+}
+
+inline gc_session_t *gc_session_create_rider(
+    const gc_rider_profile_t *profile, gc_device_kind_t device_kind) {
+    if (profile == nullptr) {
+        return nullptr;
+    }
+    return reinterpret_cast<gc_session_t *>(
+        new gc_session_c_detail::GcSession(*profile, device_kind));
 }
 
 inline void gc_session_destroy(gc_session_t *session) {
@@ -328,7 +397,11 @@ inline gc_status_t gc_session_tick(gc_session_t *session,
     auto *impl =
         reinterpret_cast<gc_session_c_detail::GcSession *>(session);
     impl->clock.advanceMs(dt_ms);
-    impl->fake->tick(impl->clock.nowMonotonicMs());
+    if (impl->fake != nullptr) {
+        impl->fake->tick(impl->clock.nowMonotonicMs());
+    } else if (impl->virtual_rider != nullptr) {
+        impl->virtual_rider->tick(impl->clock.nowMonotonicMs());
+    }
     impl->session.tick();
     return GC_OK;
 }
@@ -429,6 +502,20 @@ inline gc_status_t gc_session_clear_manual(gc_session_t *session) {
         reinterpret_cast<gc_session_c_detail::GcSession *>(session);
     TrainerCommand idle;
     impl->session.setManualCommand(idle);
+    return GC_OK;
+}
+
+inline gc_status_t gc_session_set_virtual_watts(gc_session_t *session,
+                                                double watts) {
+    if (session == nullptr) {
+        return GC_ERR_NULL;
+    }
+    auto *impl =
+        reinterpret_cast<gc_session_c_detail::GcSession *>(session);
+    if (impl->virtual_rider == nullptr) {
+        return GC_ERR_STATE;
+    }
+    impl->virtual_rider->setVirtualWatts(watts);
     return GC_OK;
 }
 

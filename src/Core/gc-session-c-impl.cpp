@@ -18,6 +18,7 @@ namespace {
 // the linker from discarding the definitions.
 void *gc_session_c_symbols[] = {
     reinterpret_cast<void *>(&gc_session_create),
+    reinterpret_cast<void *>(&gc_session_create_rider),
     reinterpret_cast<void *>(&gc_session_destroy),
     reinterpret_cast<void *>(&gc_session_load_workout_text),
     reinterpret_cast<void *>(&gc_session_start),
@@ -34,6 +35,7 @@ void *gc_session_c_symbols[] = {
     reinterpret_cast<void *>(&gc_session_time_remaining_secs),
     reinterpret_cast<void *>(&gc_session_set_manual_erg),
     reinterpret_cast<void *>(&gc_session_clear_manual),
+    reinterpret_cast<void *>(&gc_session_set_virtual_watts),
     reinterpret_cast<void *>(&gc_session_set_sim_gradient),
     reinterpret_cast<void *>(&gc_session_set_slope),
 };
