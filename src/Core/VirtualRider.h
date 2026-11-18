@@ -21,11 +21,12 @@
 // A trainer with no hardware, for playing the game without one.
 // The app drives the rider's watts into it with setVirtualWatts
 // (keyboard/buttons are the game's "legs" until a real trainer
-// exists), and it reports speed from the surfaced physics model
-// (computeInstantSpeed, step 2), accumulating distance and
+// exists), and it reports speed from the BicycleSim momentum model
+// (wired in the BicycleSim port step), accumulating distance and
 // altitude from its own speed each tick — the way a real trainer
 // reports cumulative distance, so the session merges it, the
-// recorder gets it, and the app reads it.
+// recorder gets it, and the app reads it. computeInstantSpeed
+// stays as the steady-state oracle: the sim converges to it.
 //
 // Configuration (VirtualRiderConfig, all fields documented here):
 //   name:            device name; info().id is "virtual:<name>".
@@ -58,13 +59,13 @@
 //    set. In ERG mode the speed still comes from the physics
 //    model (converged watts, current gradient), so an ERG ride
 //    on a gradient still climbs at the ERG watts.
-//  - Speed: computeInstantSpeed(rider + bike weight, gradient,
-//    altitude, watts) each tick. Gradient is the last slope or
-//    sim gradient, whichever mode is active. The model is
-//    instantaneous — speed follows watts and gradient at once,
-//    with no momentum. That is the documented limitation of the
-//    instant function; the BicycleSim momentum model is later
-//    work, not this device.
+//  - Speed: the BicycleSim momentum model each tick, driven by
+//    the current watts, the active gradient, and the altitude.
+//    Gradient is the last slope or sim gradient, whichever mode
+//    is active. Speed carries momentum through watts and gradient
+//    changes; the steady state equals computeInstantSpeed with
+//    the same mass and Cd. The sim's first tick uses dt = 0.01 s
+//    (its first-sample rule), so a ride starts from rest.
 //  - Distance and altitude accumulate from speed: distance +=
 //    speed * dt; altitude += speed * dt * sin(atan(gradient)).
 //  - Samples are emitted only while a trainer command is active
@@ -87,9 +88,11 @@
 #ifndef _GC_VirtualRider_h
 #define _GC_VirtualRider_h 1
 
+#include "BicycleSim.h"
 #include "IDevice.h"
 #include "PhysicsUtility.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <string>
@@ -110,7 +113,29 @@ struct VirtualRiderConfig {
 class VirtualRider : public ITrainer {
 public:
     explicit VirtualRider(const VirtualRiderConfig &config)
-        : config_(config) {}
+        : config_(config), bicycle_(bicycleConfigFor(config)) {}
+
+    // Build the sim config from the device config. Total mass stays
+    // rider + bike exactly as the instant model used it: the
+    // table's wheel masses (front 1145 g + rear 1335 g = 2.48 kg)
+    // are subtracted from the bike weight to get the mass without
+    // wheels. crr/Cd/A/T are forwarded; Cm is 1.0, as the instant
+    // call used. The rest rides on the BicycleConfig defaults.
+    static BicycleConfig bicycleConfigFor(const VirtualRiderConfig &c) {
+        // Table wheel masses, SimBicyclePage defaults (see
+        // doc/core-view-split/bicyclesim-scope.md).
+        const double kTableWheelMassKg = 2.48;
+        BicycleConfig config;
+        config.rider_weight_kg = c.rider_weight_kg;
+        config.bike_mass_without_wheels_g =
+            std::max(0.0, (c.bike_weight_kg - kTableWheelMassKg) * 1000.0);
+        config.crr = c.crr;
+        config.Cm = 1.0;
+        config.Cd = c.Cd;
+        config.frontal_area_m2 = c.frontal_area_m2;
+        config.temp_kelvin = c.temp_kelvin;
+        return config;
+    }
 
     DeviceInfo info() const override {
         DeviceInfo device_info;
@@ -147,6 +172,7 @@ public:
         altitude_m_ = 0;
         speed_kph_ = 0;
         current_watts_ = virtual_watts_;
+        bicycle_.clear(); // new ride starts from rest
     }
 
     void stop() override { started_ = false; }
@@ -245,26 +271,29 @@ public:
             gradient = sim_gradient_;
         }
 
-        double total_weight_kg =
-            config_.rider_weight_kg + config_.bike_weight_kg;
-        speed_kph_ = computeInstantSpeed(
-            total_weight_kg, gradient, altitude_m_, current_watts_,
-            config_.crr, 1.0, config_.Cd, config_.frontal_area_m2,
-            config_.temp_kelvin);
+        // Momentum model: speed from the sim, distance from the
+        // sim's returned distance tick. The sim's first tick uses
+        // dt = 0.01 s (its first-sample rule); later ticks use the
+        // device dt. The steady state equals computeInstantSpeed
+        // with the same mass and Cd.
+        double dt_s = static_cast<double>(dt_ms) / 1000.0;
+        BicycleSimState simState(current_watts_, gradient, altitude_m_);
+        SpeedDistance sim = bicycle_.SampleSpeed(simState, dt_s);
+        speed_kph_ = sim.v;
         if (speed_kph_ < 0) {
             speed_kph_ = 0;
         }
 
-        // Accumulate distance and altitude from speed. Altitude
-        // gain is speed * dt * sin(atan(gradient)), with the
-        // gradient as a fraction (8% = 0.08).
-        double dt_s = static_cast<double>(dt_ms) / 1000.0;
-        double speed_ms = speed_kph_ / 3.6;
+        // Accumulate distance from the sim. Altitude gain is
+        // distance * sin(atan(gradient)), with the gradient as a
+        // fraction (8% = 0.08) — the sim takes altitude as input,
+        // it does not produce it.
+        double dist_m = sim.d * 1000.0;
         double gradient_fraction = gradient / 100.0;
         double sin_slope = gradient_fraction /
             std::sqrt(1.0 + gradient_fraction * gradient_fraction);
-        distance_m_ += speed_ms * dt_s;
-        altitude_m_ += speed_ms * dt_s * sin_slope;
+        distance_m_ += dist_m;
+        altitude_m_ += dist_m * sin_slope;
 
         TelemetrySample sample;
         sample.monotonic_ms = now_ms;
@@ -300,6 +329,7 @@ public:
 
 private:
     VirtualRiderConfig config_;
+    Bicycle bicycle_;
     ISampleSink *sink_ = nullptr;
     bool connected_ = false;
     bool started_ = false;

@@ -26,6 +26,8 @@
 #include "BicycleSim.h"
 #include "Integrator.h"
 
+#include <cmath>
+
 BicycleWheel::BicycleWheel(double outerR,         // outer radius in meters (for circumference)
                            double innerR,         // inner rim radius
                            double massKG,         // total wheel mass

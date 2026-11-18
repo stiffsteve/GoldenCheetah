@@ -7,9 +7,11 @@
 //
 // Speed pins come from the physics suite's values: 250 W on
 // the flat at 83 kg (75 rider + 8 bike) is 32.0819 kph, and
-// at 8% it is 12.4797 kph. The tolerance is 0.05 kph, which
-// also catches a missing bike weight (75 kg alone would give
-// 32.2131 kph on the flat).
+// at 8% it is 12.4797 kph. The device now rides the BicycleSim
+// momentum model, so these are STEADY-STATE values: the tests
+// drive 120 s (the sim converges in ~60 s) and keep the 0.05 kph
+// tolerance, which also catches a missing bike weight (75 kg
+// alone would give 32.2131 kph on the flat).
 
 #include "Core/PhysicsUtility.h"
 #include "Core/VirtualRider.h"
@@ -89,16 +91,19 @@ private slots:
         device.start();
         device.setVirtualWatts(250);
         device.setSlopeMode(0, 75);
-        drive(device, 2000);
+        // Steady state, not the 2 s transient: the momentum
+        // model is still ramping at 2 s (~10 kph).
+        drive(device, 120000);
         QVERIFY(!sink.samples.empty());
         // Flat at 250 W, 83 kg: the physics pin, and the
         // wiring check against the function itself.
         QVERIFY(std::abs(device.speedKph() - 32.0819) < 0.05);
         QVERIFY(std::abs(device.speedKph() -
-                         computeInstantSpeed(83, 0, 0, 250)) < 0.001);
-        // Same watts on an 8% climb: much slower.
+                         computeInstantSpeed(83, 0, 0, 250)) < 0.05);
+        // Same watts on an 8% climb: much slower, after the
+        // speed has decayed from the flat steady state.
         device.setSlopeMode(8, 75);
-        drive(device, 2000);
+        drive(device, 120000);
         QVERIFY(std::abs(device.speedKph() - 12.4797) < 0.05);
         QVERIFY(device.speedKph() < 15.0);
     }
@@ -111,10 +116,10 @@ private slots:
         device.start();
         device.setVirtualWatts(200);
         device.setSimMode(0, 0); // speed param ignored: computed
-        drive(device, 2000);
+        drive(device, 120000);
         QVERIFY(std::abs(device.speedKph() - 29.5532) < 0.05);
         device.setSimMode(8, 0);
-        drive(device, 2000);
+        drive(device, 120000);
         QVERIFY(std::abs(device.speedKph() - 10.1644) < 0.05);
     }
 
@@ -147,10 +152,12 @@ private slots:
         device.setVirtualWatts(250);
         device.setSlopeMode(0, 75);
         drive(device, 10000);
-        // ~32.08 kph = 8.91 m/s; 40 ticks at 250 ms give 39
-        // intervals of 250 ms = 9.75 s, so ~86.9 m.
-        QVERIFY(device.distanceM() > 80.0);
-        QVERIFY(device.distanceM() < 95.0);
+        // Momentum model from rest: 40 ticks at 250 ms give 39
+        // intervals of 250 ms = 9.75 s, and the speed is still
+        // ramping (probe: 43.9 m at 10 s with 100 ms ticks).
+        // The instant model gave ~86.9 m over the same time.
+        QVERIFY(device.distanceM() > 35.0);
+        QVERIFY(device.distanceM() < 50.0);
         // The samples carry the distance too.
         QVERIFY(!sink.samples.empty());
         QVERIFY(std::abs(sink.samples.back().distance_m -
@@ -166,9 +173,11 @@ private slots:
         device.setVirtualWatts(250);
         device.setSlopeMode(8, 75);
         drive(device, 10000);
-        // ~12.48 kph for 9.75 s is ~33.8 m of road; altitude
-        // is road * sin(atan(0.08)) = road * 0.0797, ~2.7 m.
-        QVERIFY(device.altitudeM() > 2.0);
+        // Momentum model from rest: ~27 m of road in 9.75 s
+        // (probe: 27.5 m at 10 s); altitude is road *
+        // sin(atan(0.08)) = road * 0.0797, ~2.2 m. The instant
+        // model gave ~33.8 m of road, ~2.7 m.
+        QVERIFY(device.altitudeM() > 1.5);
         QVERIFY(device.altitudeM() < 3.5);
         // On the flat the altitude stays put.
         VirtualRider flat(defaultConfig());

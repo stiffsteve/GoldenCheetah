@@ -5,27 +5,36 @@
 # workout loaded: the app drives the rider's watts in with
 # set_virtual_watts and the course gradient in with
 # set_sim_gradient, and the device reports speed from the
-# physics model. It runs 40 s — 20 s flat at 200 W, then
-# 20 s at 8% — and checks its own result, so it stays
-# verifiable headless:
+# BicycleSim momentum model. It runs 40 s — 20 s flat at
+# 200 W, then 20 s at 8% — and checks its own result, so
+# it stays verifiable headless:
 #   godot --headless --path godot res://freeride.tscn
 # prints "freeride-client: PASS" and exits 0 on success.
 #
-# Expected numbers (physics pins): 200 W on the flat at
-# 83 kg is 29.55 kph; at 8% it is 10.16 kph. Distance after
-# 40 s is about 220 m. A flat that still produced speed, or
-# a climb that didn't slow the rider, fails the run.
+# Expected numbers (re-measured 2026-11-18 after wiring
+# VirtualRider to the sim): 200 W on the flat at 83 kg
+# reaches 26.5 kph at 20 s, still rising toward the
+# 29.55 kph steady state; at 8% it is 10.2 kph at 40 s,
+# converged on the 10.16 kph steady state. Distance after
+# 40 s is 184 m. The bounds are tight enough to catch the
+# instant model (flat 29.6 kph, distance 220 m). A flat
+# that still produced speed, or a climb that didn't slow
+# the rider, fails the run. The run is deterministic
+# (fixed 250 ms steps), so the measured values repeat
+# exactly.
 #
 # The bounds are @export so the profile scene
 # (freeride-profile.tscn) reuses this script with a heavier
-# rider: 100 kg rider + 10 kg bike is 29.08 kph flat and
-# 7.83 kph at 8% — the climb is where the weight shows, so
-# its bounds are the discriminating check. The scene also
-# sets expect_weight_kg / expect_height_cm /
-# expect_bike_weight_kg, and _ready fails fast if the node
-# properties do not round-trip those values. Height has no
-# speed effect in the instant model (Cd is fixed), so the
-# height check is a round-trip only.
+# rider: 100 kg rider + 10 kg bike reaches 24.3 kph flat
+# at 20 s (steady 29.08 kph) and 7.8 kph at 8% (steady
+# 7.83 kph), distance 159 m — the climb is where the
+# weight shows, so its bounds are the discriminating
+# check. The scene also sets expect_weight_kg /
+# expect_height_cm / expect_bike_weight_kg, and _ready
+# fails fast if the node properties do not round-trip
+# those values. Height has no speed effect in the momentum
+# model either (Cd is fixed), so the height check is a
+# round-trip only.
 extends Node
 
 const DURATION_SECS := 40.0
@@ -37,12 +46,12 @@ const CLIMB_GRADIENT := 8.0
 # Bounds and profile expectations, set by the scene that
 # uses this script. Defaults are the 75 kg rider (83 kg
 # total) in freeride.tscn.
-@export var expect_flat_min := 20.0
-@export var expect_flat_max := 35.0
-@export var expect_climb_min := 5.0
-@export var expect_climb_max := 15.0
-@export var expect_dist_min := 150.0
-@export var expect_dist_max := 300.0
+@export var expect_flat_min := 24.0
+@export var expect_flat_max := 29.0
+@export var expect_climb_min := 9.0
+@export var expect_climb_max := 11.5
+@export var expect_dist_min := 165.0
+@export var expect_dist_max := 205.0
 @export var expect_weight_kg := 75.0
 @export var expect_height_cm := 175.0
 @export var expect_bike_weight_kg := 8.0
