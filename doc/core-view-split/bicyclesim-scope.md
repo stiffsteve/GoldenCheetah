@@ -188,10 +188,16 @@ settings, no Qt event loop). Wall-clock dt via real sleeps,
    `KEFromV`/`VFromKE` round-trip; wheel equivalent mass
    (default wheels → 0.5325 kg each; KE mass 82.545 kg at 75 kg
    rider); `WattsForV(v) == watts` at `v = computeInstantSpeed(...)`
-   over a grid of (watts, slope, altitude).
-2. **Steady state, 60 s from rest:** 250 W flat ≈ 32.08 kph,
-   150 W flat ≈ 26.54 kph, 250 W at 8% ≈ 12.48 kph, 0 W flat → 0
-   (the `computeInstantSpeed` values).
+   over a grid of (watts, slope, altitude) — compared at the SIM's
+   mass and Cd (81.48 kg from the parts table, Cd 0.9955), not the
+   83 kg / Cd 1.0 of the instant-model pins: the force model is
+   shared, but `Frg` scales with mass, so comparing at 83 kg
+   shows false diffs of up to 10 W on descents. Verified by the
+   probe: all 60 grid points agree to 0.000000000 W.
+2. **Steady state, 60 s from rest:** 250 W flat ≈ 32.15 kph,
+   150 W flat ≈ 26.60 kph, 250 W at 8% ≈ 12.68 kph, 0 W flat → 0
+   (the `computeInstantSpeed` values at the sim's 81.48 kg and
+   Cd 0.9955 — NOT the 32.08 / 26.54 / 12.48 of the 83 kg pins).
 3. **Step response:** from rest, 250 W flat — speed at 5/10/20/30/
    60 s and distance at 60 s; gradient step (20 s flat, then 8% at
    same watts) — speed at +5/+10/+20 s; watts step to 0 at speed —
