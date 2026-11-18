@@ -268,17 +268,22 @@ each step is usable and testable on its own.
 
 ## Later, gated — not part of this plan
 
-- **Real trainer.** The seam already exists (`IDevice` /
-  `ITrainer`, `DeviceManager`), but no real driver is
-  converted and the C ABI has no scan/select. That step is:
-  a real driver implementing `ITrainer`, device discovery
-  exposed through the C ABI, and the app choosing a device
-  instead of the virtual one. The transport (Qt Bluetooth
-  in core, or a platform BLE layer) is a decision of its
-  own — core currently allows Qt Core, but a Bluetooth
-  dependency is bigger than that, so decide it when the
-  step starts. The game code doesn't change: the app talks
-  to the session, not to the device.
+- **Real trainer.** Headless part DONE 2026-11-18 (see the
+  scope doc `doc/core-view-split/real-trainer-ftms-scope.md`
+  and Status below): `Bt40DeviceAdapter` (src/Train,
+  ITrainer + ICalibration) over the existing BT40 stack,
+  queue-and-drain on the session tick, stable
+  `ble:<address>` ids, FTMS protocol suite (19 tests),
+  adapter suite (14 tests, stubbed backend) and scanner
+  suite (7 tests). The transport decision from this bullet
+  is settled: FTMS over BLE via the BT40 stack, adapter
+  not native rewrite. What is NOT done and stays gated:
+  hardware validation (discovery/pairing on a real trainer,
+  ERG convergence, spin-down, soak, regression vs stock
+  GoldenCheetah on the Zwift Hub — needs a
+  Bluetooth-capable host), C ABI scan/select, and the
+  TrainSidebar switch. The game code doesn't change: the
+  app talks to the session, not to the device.
 - **BicycleSim momentum model in core.** DONE 2026-11-18
   (authorised "Both, BicycleSim first"): the fuller model
   (wheels, kinetic energy, watt filtering) is ported to
@@ -392,3 +397,29 @@ by accepting these decisions.
   in the GUI build — the standalone SCons compile failed
   without it; SConstruct links BicycleSim.cpp the same way
   as PhysicsUtility.cpp.
+- Real trainer, headless part DONE 2026-11-18 (commits
+  cf3377484 scope doc, 9fbf629dd FTMS helpers extracted,
+  854874a10 FTMS protocol suite, 7a5a9a1a0 adapter +
+  scanner, 43fff8564 ICalibration + CalibrationData move,
+  b4d0ebcce adapter + scanner suites): `Bt40DeviceAdapter`
+  (src/Train, ITrainer + ICalibration) translates the
+  session's commands into the legacy BT40 calls and polls
+  the legacy telemetry snapshot into TelemetrySamples via
+  tick() — queue-and-drain, no core change, no mutex.
+  Backend seam (IBt40Backend) with a production
+  implementation wrapping BT40Controller + one BT40Device
+  created directly for the scanned target, and a blocking
+  scanner mapping trainers to ble:<address> ids. Minimal
+  additive legacy changes only (link-state flag +
+  isConnected, public setLoadIntensity, controller
+  forwarders); the legacy DeviceInfo class was renamed
+  Bt40DeviceInfo — it collided with core DeviceInfo in any
+  TU including both headers. FTMS suite: 19 tests (flags
+  parsing, feature/target parsing, capping, exact
+  control-point bytes). Adapter suite: 14 tests (16
+  Totals); scanner suite: 7 tests (9 Totals). Hardware
+  part NOT done: discovery/pairing, ERG convergence,
+  spin-down, soak, and the regression vs stock
+  GoldenCheetah all need a Bluetooth-capable host + the
+  Zwift Hub. C ABI scan/select and the TrainSidebar switch
+  are still gated.
