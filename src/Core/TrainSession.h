@@ -238,8 +238,16 @@ public:
         }
     }
 
+    // Setting the gradient always activates the sim: a flat
+    // 0% course is a live gradient, not "no sim". (Before,
+    // sim_active_ was gradient != 0, so a flat turned the sim
+    // off, the command fell through to Idle, the device
+    // generated nothing, and telemetry went stale — the ride
+    // froze on every flat.) There is no off switch: the sim
+    // is the fallback command, and manual/workout commands
+    // override it while they are active.
     void setSimGradient(double gradient_pct) {
-        sim_active_ = gradient_pct != 0;
+        sim_active_ = true;
         sim_gradient_ = gradient_pct;
     }
 

@@ -158,6 +158,25 @@ private slots:
         QCOMPARE(fake->lastSimGradient(), 5.0);
     }
 
+    void simGradientZeroIsLiveNotOff() {
+        FakeClock clock;
+        InMemoryRecorder recorder;
+        FakeDevice *fake = nullptr;
+        TrainSession session = makeSession(clock, recorder, fake);
+        session.start(); // no workout loaded: free ride
+        session.setSimGradient(0); // flat course: still a gradient
+        // Past the 3 s stale timeout, so a stalled device
+        // would show up as an invalid merged sample.
+        drive(session, fake, clock, 5000);
+        // The trainer still receives the Sim command at 0% —
+        // the fake only emits while a command is active — and
+        // the merged sample stays valid instead of going stale.
+        // A flat must not freeze the ride.
+        QVERIFY(fake->emittedCount() > 0);
+        QCOMPARE(fake->lastSimGradient(), 0.0);
+        QVERIFY(session.latest().power_valid);
+    }
+
     void pauseStopsRecordingAndCommands() {
         FakeClock clock;
         InMemoryRecorder recorder;
