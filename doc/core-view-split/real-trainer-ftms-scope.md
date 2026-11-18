@@ -155,6 +155,13 @@ which silently retries.
   reports STOP_PEDALING → COAST, SUCCESS → SUCCESS,
   ERROR → FAILURE. The adapter only *exposes* this state
   (§5); the calibration dialog is follow-on work, not this item.
+- Hardening (only behaviour change in a previously-crashing
+  case): `ftms_power_cap` / `ftms_resistance_cap` divide by the
+  device's reported increment, which is 0 until the range
+  characteristic is read — the first ERG/resistance command can
+  arrive before that read completes. Both now pass the value
+  through unclamped when the increment is 0 instead of
+  dividing by zero.
 - BLE sample rate ~1 Hz; the session merges on 4 Hz ticks with
   a 3 s stale timeout. Altitude is not reported by FTMS — it
   stays 0 (the app/course owns altitude).

@@ -478,10 +478,7 @@ BT40Device::serviceStateChanged(QLowEnergyService::ServiceState s)
                             loadCharacteristic = characteristic;
                             loadType = FTMS_Device;
 
-                            QByteArray command;
-                            QDataStream commandDs(&command, QIODevice::ReadWrite);
-                            commandDs.setByteOrder(QDataStream::LittleEndian);
-                            commandDs << (quint8)FtmsControlPointCommand::FTMS_REQUEST_CONTROL;
+                            QByteArray command = ftms_encode_request_control();
 
                             // Start notifications since command results will come on this char
                             const QLowEnergyDescriptor notificationDesc = characteristic.descriptor(QBluetoothUuid::DescriptorType::ClientCharacteristicConfiguration);
@@ -806,29 +803,21 @@ BT40Device::updateValue(const QLowEnergyCharacteristic &c, const QByteArray &val
             dynamic_cast<BT40Controller*>(parent)->setSpeed(bd.inst_speed/100.0f);
         }
     } else if (c.uuid() == s_FtmsFeatureChar_UUID) {
-        quint32 features, target_settings;
-        ds >> features >> target_settings;
+        ftms_parse_feature(ds, ftmsDeviceInfo);
 
-        if (target_settings & FtmsTargetSetting::FTMS_POWER_TARGET_SUPPORTED)
+        if (ftmsDeviceInfo.supports_power_target)
         {
-            ftmsDeviceInfo.supports_power_target = true;
             // Read in order to get max/min/increment for power target
             loadService->readCharacteristic(loadService->characteristic(s_FtmsPowerRangeChar_UUID));
         }
 
-        if (target_settings & FtmsTargetSetting::FTMS_RESISTANCE_TARGET_SUPPORTED)
+        if (ftmsDeviceInfo.supports_resistance_target)
         {
-            ftmsDeviceInfo.supports_resistance_target = true;
             // Read in order to get max/min/increment for resistance target
             loadService->readCharacteristic(loadService->characteristic(s_FtmsResistanceRangeChar_UUID));
         }
 
-        if (target_settings & FtmsTargetSetting::FTMS_INDOOR_BIKE_SIMULATION_SUPPORTED)
-        {
-            ftmsDeviceInfo.supports_simulation_target = true;
-        }
-
-        if (target_settings & FtmsTargetSetting::FTMS_SPIN_DOWN_CONTROL_SUPPORTED)
+        if (ftmsDeviceInfo.supports_spin_down_calibration)
         {
             calibrationData.setType(0, CALIBRATION_TYPE_SPINDOWN);
             calibrationData.setState(CALIBRATION_STATE_IDLE);
@@ -836,8 +825,6 @@ BT40Device::updateValue(const QLowEnergyCharacteristic &c, const QByteArray &val
             calibrationData.setSpindownTime(0);
             calibrationData.setTargetSpeed(0);
             calibrationData.setSlope(0);
-
-            ftmsDeviceInfo.supports_spin_down_calibration = true;
         }
 
     } else if (c.uuid() == s_FtmsPowerRangeChar_UUID) {
@@ -1062,11 +1049,8 @@ void BT40Device::setGradient(double g)
         qint16 ftms_grade = this->gradient*100; // in 0.01 %
         quint8 ftms_crr = this->rollingResistance; // 0.0001 unitless
         quint8 ftms_cw = this->windResistance; // 0.01 Kg/m
-        QByteArray command;
-        QDataStream commandDs(&command, QIODevice::ReadWrite);
-        commandDs.setByteOrder(QDataStream::LittleEndian);
-        commandDs << (quint8)FtmsControlPointCommand::FTMS_SET_INDOOR_BIKE_SIMULATION_PARAMS << ftms_wind_speed << ftms_grade << ftms_crr << ftms_cw;
-        loadService->writeCharacteristic(loadCharacteristic, command);
+        loadService->writeCharacteristic(loadCharacteristic,
+            ftms_encode_sim_params(ftms_wind_speed, ftms_grade, ftms_crr, ftms_cw));
     }
 }
 
@@ -1110,12 +1094,8 @@ BT40Device::setMode(int m)
                 // target_speed_high and target_speed_low as parameters.
                 // When the speed is reached and the device is ready
                 // it will send another message telling us to start coasting.
-                quint8 opcode = FtmsSpinDown::FTMS_SPIN_DOWN_START;
-                QByteArray command;
-                QDataStream commandDs(&command, QIODevice::ReadWrite);
-                commandDs.setByteOrder(QDataStream::LittleEndian);
-                commandDs << (quint8)FtmsControlPointCommand::FTMS_SPIN_DOWN_CONTROL << opcode;
-                loadService->writeCharacteristic(loadCharacteristic, command);
+                loadService->writeCharacteristic(loadCharacteristic,
+                    ftms_encode_spin_down_control(FtmsSpinDown::FTMS_SPIN_DOWN_START));
             } else {
                 qDebug() << "Enter calibration requested for FTMS device which doesn't support spin down calibration";
             }
@@ -1253,11 +1233,8 @@ BT40Device::setLoadErg(double l)  // Load in Watts
         load = ftms_power_cap(load, ftmsDeviceInfo);
         qDebug() << tr("FTMS Device: Set target power - after scaling ") << load;
 
-        QByteArray command;
-        QDataStream commandDs(&command, QIODevice::ReadWrite);
-        commandDs.setByteOrder(QDataStream::LittleEndian);
-        commandDs << (quint8)FtmsControlPointCommand::FTMS_SET_TARGET_POWER << (qint16)load;
-        loadService->writeCharacteristic(loadCharacteristic, command);
+        loadService->writeCharacteristic(loadCharacteristic,
+            ftms_encode_set_target_power((qint16)load));
     }
 }
 
@@ -1288,11 +1265,8 @@ BT40Device::setLoadIntensity(double l)  // between 0 and 1
         resistance = ftms_resistance_cap(resistance, ftmsDeviceInfo);
         qDebug() << tr("FTMS Device: Set load intensity - after scaling ") << resistance;
 
-        QByteArray command;
-        QDataStream commandDs(&command, QIODevice::ReadWrite);
-        commandDs.setByteOrder(QDataStream::LittleEndian);
-        commandDs << (quint8)FtmsControlPointCommand::FTMS_SET_TARGET_RESISTANCE_LEVEL << (qint16)(resistance);
-        loadService->writeCharacteristic(loadCharacteristic, command);
+        loadService->writeCharacteristic(loadCharacteristic,
+            ftms_encode_set_resistance_level((qint16)(resistance)));
     }
 }
 
@@ -1320,11 +1294,8 @@ BT40Device::setLoadLevel(int l)  // From 0 to 9
         resistance = ftms_resistance_cap(resistance, ftmsDeviceInfo);
         qDebug() << tr("FTMS Device: Set load level - after scaling ") << resistance;
 
-        QByteArray command;
-        QDataStream commandDs(&command, QIODevice::ReadWrite);
-        commandDs.setByteOrder(QDataStream::LittleEndian);
-        commandDs << (quint8)FtmsControlPointCommand::FTMS_SET_TARGET_RESISTANCE_LEVEL << (qint16)resistance;
-        loadService->writeCharacteristic(loadCharacteristic, command);
+        loadService->writeCharacteristic(loadCharacteristic,
+            ftms_encode_set_resistance_level((qint16)resistance));
     }
 }
 
@@ -1403,10 +1374,7 @@ BT40Device::sendSimulationParameters() {
         qint16 ftms_grade = this->gradient*100; // in 0.01 %
         quint8 ftms_crr = this->rollingResistance; // 0.0001 unitless
         quint8 ftms_cw = this->windResistance; // 0.01 Kg/m
-        QByteArray command;
-        QDataStream commandDs(&command, QIODevice::ReadWrite);
-        commandDs.setByteOrder(QDataStream::LittleEndian);
-        commandDs << (quint8)FtmsControlPointCommand::FTMS_SET_INDOOR_BIKE_SIMULATION_PARAMS << ftms_wind_speed << ftms_grade << ftms_crr << ftms_cw;
-        loadService->writeCharacteristic(loadCharacteristic, command);
+        loadService->writeCharacteristic(loadCharacteristic,
+            ftms_encode_sim_params(ftms_wind_speed, ftms_grade, ftms_crr, ftms_cw));
     }
 }

@@ -169,7 +169,28 @@ struct FtmsDeviceInformation {
 
 void ftms_parse_indoor_bike_data(QDataStream &ds, FtmsIndoorBikeData &bd);
 
+// Parse the FTMS Feature characteristic payload (quint32 features,
+// quint32 target settings) into the device's supports_* flags.
+// Pure: the range-characteristic reads the legacy code triggers
+// from these flags stay in BT40Device::updateValue.
+void ftms_parse_feature(QDataStream &ds, FtmsDeviceInformation &info);
+
 qint16 ftms_power_cap(qint16 power, FtmsDeviceInformation &device_info);
 double ftms_resistance_cap(qint16 resistance, FtmsDeviceInformation &device_info);
+
+// Control-point command encoders. Pure QByteArray builders with
+// the exact byte layout BT40Device used to write inline
+// (QDataStream, little-endian). Extracted so the bytes are
+// unit-testable without a radio; BT40Device calls these now.
+// The caller supplies already-scaled values, exactly as the
+// legacy call sites computed them (including the crr/cw
+// truncation quirk — see the real-trainer scope doc).
+QByteArray ftms_encode_request_control();
+QByteArray ftms_encode_set_target_power(qint16 watts);
+QByteArray ftms_encode_set_resistance_level(qint16 resistance);
+QByteArray ftms_encode_spin_down_control(quint8 opcode);
+QByteArray ftms_encode_sim_params(qint16 wind_speed_milli,
+                                  qint16 grade_centi,
+                                  quint8 crr, quint8 cw);
 
 #endif // FTMS_H
